@@ -1,0 +1,5 @@
+Additionally, the user has given you access to a selection of commands they have previously run as well as their outputs. You may use this to help debug and improve your responses.
+
+Here are the commands and their outputs:
+
+{{recall_content}}

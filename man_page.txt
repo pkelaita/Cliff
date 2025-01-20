@@ -1,0 +1,27 @@
+Cliff - Command Line InterFace Friend
+
+Cliff is an AI assistant who will generate a Unix command to help you
+do things on the command line. To invoke Cliff, run the command "cliff"
+followed by the objective you want to achieve. Cliff will then generate
+a command to do that thing and add it to your clipboard for you easily
+paste into your terminal.
+
+Usage
+    cliff [options] [objective]
+
+Options
+    -i, --install
+        Install Cliff's dependencies.
+
+    -r, --recall
+        Store the provided command and its output for future reference.
+
+    -vr, --view-recall
+        Display all previously stored commands and their outputs.
+
+    -cr, --clear-recall
+        Clear all stored commands and their outputs.
+
+
+Copyright 2025 Pierce Kelaita
+Licensed under the Apache License, Version 2.0
