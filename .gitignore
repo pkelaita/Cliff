@@ -1,4 +1,15 @@
 .DS_Store
+
 venv/
+__pycache__/
+.pytest_cache/
+.tox/
+*.egg-info/
+.ruff_cache/
+.coverage
+.mypy_cache/
+build/
+dist/
+
 **/cliff_recall
 **/cliff_mem

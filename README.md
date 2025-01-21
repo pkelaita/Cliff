@@ -8,22 +8,14 @@ It's annoying having to open the browser when I forget how to do something in th
 
 ## Requirements
 
-- Python >= 3.13
+- Python >= 3.9
 - A valid OpenAI API key
 - A Unix-like operating system
 
 ## Installation
 
-- Clone this repository
-- In this repository, run `chmod +x run.sh`
+- Install Cliff from PyPI: `pip install cliff-cli`
 - Create the file `~/envs/llm` and add your OpenAI API key to it in the format `OPENAI_API_KEY=sk-...`
-- Add the following alias to your `.bashrc` or `.zshrc` (and source it):
-
-```bash
-alias cliff="path/to/cliff/run.sh"
-```
-
-- Run `cliff --install` to install the dependencies
 
 ## Usage
 
@@ -57,7 +49,7 @@ That's it! It's pretty simple which is the point.
 
 ## Planned Features
 
-- Install with homebrew
-- Customize Cliff (e.g., which model to use) via a config file
+- Install with homebrew tap
+- Customize Cliff (e.g., which model to use, where API keys are stored, etc.) via a config file
 - Chat mode with sliding memory
 - Other features as they come to mind
