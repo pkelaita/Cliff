@@ -14,8 +14,22 @@ It's annoying having to open the browser when I forget how to do something in th
 
 ## Installation
 
-- Install Cliff from PyPI: `pip install cliff-cli`
-- Create the file `~/envs/llm` and add your OpenAI API key to it in the format `OPENAI_API_KEY=sk-...`
+You can install Cliff with homebrew:
+
+```bash
+brew tap pkelaita/cliff
+brew install cliff
+```
+
+Or from PyPI:
+
+```bash
+pip install cliff-cli
+```
+
+## Configuration
+
+Create the file `~/envs/llm` and add your OpenAI API key to it in the format `OPENAI_API_KEY=sk-...`
 
 ## Usage
 
@@ -23,7 +37,7 @@ Get started by running `cliff` with an objective.
 
 **Example:**
 
-```bash
+```
 cliff kill the process running on port 8080
 ```
 
@@ -49,7 +63,6 @@ That's it! It's pretty simple which is the point.
 
 ## Planned Features
 
-- Install with homebrew tap
 - Customize Cliff (e.g., which model to use, where API keys are stored, etc.) via a config file
 - Chat mode with sliding memory
 - Other features as they come to mind
