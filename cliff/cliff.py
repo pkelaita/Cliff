@@ -6,6 +6,10 @@ import subprocess
 from l2m2.client import LLMClient
 from l2m2.tools import PromptLoader
 
+HOME_DIR = os.path.expanduser("~")
+if not os.path.exists(os.path.join(HOME_DIR, ".cliff")):
+    os.makedirs(os.path.join(HOME_DIR, ".cliff"))
+
 if __name__ == "__main__":
     from __init__ import __version__
     from config import apply_config, load_config, process_config_command
@@ -13,15 +17,10 @@ else:
     from cliff import __version__
     from cliff.config import apply_config, load_config, process_config_command
 
-DIR = os.path.dirname(os.path.abspath(__file__))
-RECALL_FILE = os.path.join(DIR, "resources", "cliff_recall")
-MEM_FILE = os.path.join(DIR, "resources", "cliff_mem")
-MAN_PAGE = os.path.join(DIR, "resources", "man_page.txt")
+RECALL_FILE = os.path.join(HOME_DIR, ".cliff", "cliff_recall")
 
-CWD = os.getcwd()
-LS_OUTPUT = subprocess.run(["ls", "-al"], capture_output=True, text=True).stdout
-OS_NAME = os.uname().sysname
-OS_VERSION = os.uname().release
+DIR = os.path.dirname(os.path.abspath(__file__))
+MAN_PAGE = os.path.join(DIR, "resources", "man_page.txt")
 
 POSSIBLE_FLAGS = [
     "-v",
@@ -36,6 +35,8 @@ POSSIBLE_FLAGS = [
     "--clear-recall",
     "--config",
 ]
+
+CWD = os.getcwd()
 
 
 def main() -> None:
@@ -127,10 +128,12 @@ def main() -> None:
         sysprompt = pl.load_prompt(
             "system.txt",
             variables={
-                "os_name": OS_NAME,
-                "os_version": OS_VERSION,
+                "os_name": os.uname().sysname,
+                "os_version": os.uname().release,
                 "cwd": CWD,
-                "ls_output": LS_OUTPUT,
+                "ls_output": subprocess.run(
+                    ["ls", "-al"], capture_output=True, text=True
+                ).stdout,
                 "recall_prompt": recall_prompt,
             },
         )
@@ -139,8 +142,6 @@ def main() -> None:
             model = model_arg
         else:
             model = config["default_model"]
-
-        print("using model", model)
 
         result = llm.call(
             model=model,

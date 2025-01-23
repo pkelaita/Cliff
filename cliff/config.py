@@ -4,8 +4,10 @@ import json
 
 from l2m2.client import LLMClient
 
+HOME_DIR = os.path.expanduser("~")
+CONFIG_FILE = os.path.join(HOME_DIR, ".cliff", "config.json")
+
 DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(DIR, "resources/cliff.config.json")
 HELP_FILE = os.path.join(DIR, "resources/config_help.txt")
 
 VALID_PROVIDERS = {
