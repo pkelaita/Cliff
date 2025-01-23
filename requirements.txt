@@ -1,2 +1,1 @@
-l2m2
-python-dotenv
+l2m2==0.0.40

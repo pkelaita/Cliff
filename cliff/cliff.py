@@ -3,14 +3,15 @@ import sys
 import json
 import subprocess
 
-from dotenv import load_dotenv
 from l2m2.client import LLMClient
 from l2m2.tools import PromptLoader
 
 if __name__ == "__main__":
     from __init__ import __version__
+    from config import apply_config, load_config, process_config_command
 else:
     from cliff import __version__
+    from cliff.config import apply_config, load_config, process_config_command
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 RECALL_FILE = os.path.join(DIR, "resources", "cliff_recall")
@@ -25,21 +26,16 @@ OS_VERSION = os.uname().release
 POSSIBLE_FLAGS = [
     "-v",
     "--version",
+    "-m",
+    "--model",
     "-r",
     "--recall",
     "-vr",
     "--view-recall",
     "-cr",
     "--clear-recall",
+    "--config",
 ]
-
-load_dotenv(os.path.expanduser("~/envs/llm"))
-
-if os.getenv("OPENAI_API_KEY") is None:
-    print(
-        "[Cliff] OpenAI API key not found. Please ensure ~/envs/llm exists and has this value."
-    )
-    sys.exit(1)
 
 
 def main() -> None:
@@ -49,14 +45,30 @@ def main() -> None:
         with open(MAN_PAGE, "r") as f:
             print(f.read().replace("{{version}}", __version__))
         sys.exit(0)
+
     flags = []
+    model_arg = None
     while len(args) > 0 and args[0] in POSSIBLE_FLAGS:
-        flags.append(args.pop(0))
+        flag = args.pop(0)
+        flags.append(flag)
+        if flag in ("-m", "--model") and len(args) > 0:
+            model_arg = args.pop(0)
+
+    if model_arg is None and ("-m" in flags or "--model" in flags):
+        print("[Cliff] Isage: cliff --model [model] [objective]")
+        sys.exit(1)
+
     content = " ".join(args)
+    config_command = "--config" in flags
     view_version = "-v" in flags or "--version" in flags
     store_recall = "-r" in flags or "--recall" in flags
     view_recall = "-vr" in flags or "--view-recall" in flags
     clear_recall = "-cr" in flags or "--clear-recall" in flags
+
+    # apply config
+    llm = LLMClient()
+    config = load_config()
+    apply_config(config, llm)
 
     # load recall content
     recall_content = ""
@@ -68,7 +80,10 @@ def main() -> None:
             f.write("")
 
     # Check for options
-    if view_version:
+    if config_command:
+        process_config_command(args, llm)
+
+    elif view_version:
         print(f"[Cliff] Version {__version__}")
 
     elif store_recall:
@@ -94,6 +109,12 @@ def main() -> None:
 
     # Run standard generation
     else:
+        if len(llm.get_active_models()) == 0:
+            print(
+                "[Cliff] Welcome to Cliff! To get started, please add a provider by typing cliff --config add [provider] [api-key]"
+            )
+            sys.exit(0)
+
         pl = PromptLoader(prompts_base_dir=os.path.join(DIR, "prompts"))
 
         recall_prompt = ""
@@ -114,10 +135,15 @@ def main() -> None:
             },
         )
 
-        llm = LLMClient()
+        if model_arg is not None:
+            model = model_arg
+        else:
+            model = config["default_model"]
+
+        print("using model", model)
 
         result = llm.call(
-            model="gpt-4o",
+            model=model,
             prompt=content,
             system_prompt=sysprompt,
             json_mode=True,
@@ -127,11 +153,7 @@ def main() -> None:
         try:
             result_dict = json.loads(result)
             command = result_dict["command"]
-            subprocess.run(
-                ["pbcopy"],
-                input=command,
-                text=True,
-            )
+            subprocess.run(["pbcopy"], input=command, text=True)
         except json.JSONDecodeError:
             command = "Error: Invalid JSON response from the LLM."
 

@@ -17,8 +17,8 @@ tox:
 	tox -p auto
 
 clear-deps:
-	@pip uninstall -y cliff > /dev/null 2>&1
-	@pip freeze | xargs pip uninstall -y > /dev/null
+	pip uninstall -y cliff > /dev/null 2>&1
+	pip freeze | xargs pip uninstall -y > /dev/null
 
 coverage:
 	pytest --cov=cliff --cov-report=html
@@ -32,6 +32,10 @@ typecheck:
 
 build:
 	python -m build
+
+update-build: build
+	pip uninstall -y cliff-cli
+	pip install .
 
 clean:
 	@rm -rf build \

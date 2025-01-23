@@ -16,6 +16,9 @@ Options
     -v, --version
         Display the version of Cliff.
 
+    -m, --model [model] [objective]
+        Specify the model to use to generate the command
+
     -r, --recall [command]
         Store the provided command and its output for future reference.
 
@@ -24,6 +27,9 @@ Options
 
     -cr, --clear-recall
         Clear all stored commands and their outputs.
+
+    --config [options]
+        Configure Cliff. See `cliff --config help` for more information.
 
 
 Copyright 2025 Pierce Kelaita

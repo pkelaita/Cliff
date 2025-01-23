@@ -1,0 +1,40 @@
+The Cliff configuration system allows you to manage providers, api
+keys, and more, and is accessed with the --config flag.
+
+USAGE
+    cliff --config [command] [options]
+
+COMMANDS
+add [provider] [api-key]
+    - Adds or updates a specified provider with the given API key.
+    - Usage Example: cliff --config add openai sk-abc123
+    - Available providers: openai, anthropic, google, cohere, groq,
+      replicate, mistral, cerebras.
+
+default-model [model]
+    - Sets the default model Cliff will use.
+    - Note: The model must already be available through an added
+      provider. See the full list of supported models below:
+      https://github.com/pkelaita/l2m2/blob/main/docs/supported_models.md
+    - Usage Example: cliff --config default-model gpt-4o
+
+remove [provider]
+    - Removes the specified provider from the configuration,
+      including its stored API key.
+    - Usage Example: cliff --config remove openai
+
+view
+    - Prints the entire configuration as JSON.
+    - Usage: cliff --config view
+
+help
+    - Prints this message.
+    - Usage: cliff --config help
+
+ADDITIONAL INFORMATION
+    - Adding multiple providers is supported; you can switch the
+      default model at any time with default-model.
+    - The config file will be created automatically if it does not
+      exist.
+    - Ensure you type the exact provider name correctly; otherwise,
+      Cliff will reject the provider.

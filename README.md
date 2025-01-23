@@ -9,7 +9,7 @@ It's annoying having to open the browser when I forget how to do something in th
 ## Requirements
 
 - Python >= 3.9
-- A valid OpenAI API key
+- A valid API key from [OpenAI](https://platform.openai.com/), [Anthropic](https://www.anthropic.com/api), [Google](https://ai.google.dev/), [Cohere](https://cohere.com/), [Groq](https://console.groq.com/login), [Replicate](https://replicate.com/), [Mistral](https://docs.mistral.ai/deployment/laplateforme/overview/), or [Cerebras](https://cloud.cerebras.ai/).
 - A Unix-like operating system
 
 ## Installation
@@ -21,7 +21,7 @@ brew tap pkelaita/cliff
 brew install cliff
 ```
 
-Or from PyPI:
+Or with pip:
 
 ```bash
 pip install cliff-cli
@@ -29,17 +29,25 @@ pip install cliff-cli
 
 ## Configuration
 
-Create the file `~/envs/llm` and add your OpenAI API key to it in the format `OPENAI_API_KEY=sk-...`
+Add your LLM provider API credentials as follows:
+
+```
+cliff --config add [provider] [api key]
+```
+
+The provider can be any of `openai`, `anthropic`, `google`, `cohere`, `groq`, `replicate`, `mistral`, or `cerebras`.
+
+For a full overview of the configuration system, run `cliff --config help`, and for a full list of supported models for each provider, see [L2M2's docs](https://github.com/pkelaita/l2m2/blob/main/docs/supported_models.md).
 
 ## Usage
 
 Get started by running `cliff` with an objective.
 
-**Example:**
-
 ```
 cliff kill the process running on port 8080
 ```
+
+Cliff will automatically add the command to your paste buffer, so no need to copy-paste it.
 
 If needed (i.e., to avoid escaping special characters), you can use quotes.
 
@@ -47,7 +55,13 @@ If needed (i.e., to avoid escaping special characters), you can use quotes.
 cliff "kill the process that's running on port 8080"
 ```
 
-Currently, cliff uses `gpt-4o` to generate commands.
+If you want to specify which model to use, you can do so with the `--model` flag.
+
+```
+cliff --model gpt-4o-mini kill the process running on port 8080
+```
+
+You can set the default model with `cliff --config default-model [model]`.
 
 **Recalling Command Outputs:**
 
@@ -63,6 +77,6 @@ That's it! It's pretty simple which is the point.
 
 ## Planned Features
 
-- Customize Cliff (e.g., which model to use, where API keys are stored, etc.) via a config file
 - Chat mode with sliding memory
+- Support for Ollama (I need to update [L2M2](https://github.com/pkelaita/l2m2) for this)
 - Other features as they come to mind
