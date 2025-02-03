@@ -11,17 +11,27 @@ add [provider] [api-key]
       replicate, mistral, cerebras.
     - Usage Example: cliff --config add openai sk-abc123
 
+add ollama [model]
+    - Adds a local model to the configuration.
+    - Currently only compatible with Ollama, so the model must be
+      loaded into Ollama in order to use it.
+    - Usage Example: cliff --config add ollama phi3:3.8b
+
+remove [provider]
+    - Removes the specified provider from the configuration,
+      including its stored API key.
+    - Usage Example: cliff --config remove openai
+
+remove ollama [model]
+    - Removes a local model from the configuration.
+    - Usage Example: cliff --config remove ollama phi3:3.8b
+
 default-model [model]
     - Sets the default model Cliff will use.
     - Note: The model must already be available through an added
       provider. See the full list of supported models below:
       https://github.com/pkelaita/l2m2/blob/main/docs/supported_models.md
     - Usage Example: cliff --config default-model gpt-4o
-
-remove [provider]
-    - Removes the specified provider from the configuration,
-      including its stored API key.
-    - Usage Example: cliff --config remove openai
 
 prefer
     - Manages preferred providers for specific models. This is essential if
@@ -41,11 +51,3 @@ show
 help
     - Prints this message.
     - Usage: cliff --config help
-
-ADDITIONAL INFORMATION
-    - Adding multiple providers is supported; you can switch the
-      default model at any time with default-model.
-    - The config file will be created automatically if it does not
-      exist.
-    - Ensure you type the exact provider name correctly; otherwise,
-      Cliff will reject the provider.

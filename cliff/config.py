@@ -1,4 +1,4 @@
-from typing import Dict, Optional, List
+from typing import Dict, Optional, List, Union
 import os
 import json
 
@@ -10,7 +10,7 @@ CONFIG_FILE = os.path.join(HOME_DIR, ".cliff", "config.json")
 DIR = os.path.dirname(os.path.abspath(__file__))
 HELP_FILE = os.path.join(DIR, "resources/config_help.txt")
 
-VALID_PROVIDERS = {
+HOSTED_PROVIDERS = {
     "groq",
     "cohere",
     "mistral",
@@ -32,12 +32,13 @@ DEFAULT_MODEL_MAPPING = {
     "anthropic": "claude-3.5-haiku",
 }
 
-Config = Dict[str, Optional[Dict[str, str]]]
+Config = Dict[str, Optional[Union[Dict[str, str], List[str]]]]
 
 DEFAULT_CONFIG: Config = {
     "provider_credentials": {},
     "default_model": None,
     "preferred_providers": {},
+    "ollama_models": [],
 }
 
 
@@ -60,6 +61,9 @@ def apply_config(config: Config, llm: LLMClient) -> None:
 
     llm.set_preferred_providers(config["preferred_providers"])
 
+    for model in config["ollama_models"]:  # type: ignore
+        llm.add_local_model(model, "ollama")
+
 
 def save_config(config: Config) -> None:
     with open(CONFIG_FILE, "w") as f:
@@ -67,7 +71,7 @@ def save_config(config: Config) -> None:
 
 
 def add_provider(provider: str, api_key: str) -> int:
-    if provider not in VALID_PROVIDERS:
+    if provider not in HOSTED_PROVIDERS:
         print(f"[Cliff] Invalid provider: {provider}")
         return 1
 
@@ -87,6 +91,27 @@ def add_provider(provider: str, api_key: str) -> int:
     else:
         print(f"[Cliff] Added provider {provider}")
         return 0
+
+
+def add_ollama(model: str) -> int:
+    config = load_config()
+    config["ollama_models"].append(model)  # type: ignore
+    if config["default_model"] is None:
+        config["default_model"] = model  # type: ignore
+    save_config(config)
+    print(f"[Cliff] Added local model {model}")
+    return 0
+
+
+def remove_ollama(model: str) -> int:
+    config = load_config()
+    if model not in config["ollama_models"]:  # type: ignore
+        print(f"[Cliff] local model {model} not found")
+        return 1
+    config["ollama_models"].remove(model)  # type: ignore
+    save_config(config)
+    print(f"[Cliff] Removed local model {model}")
+    return 0
 
 
 def remove_provider(provider: str) -> int:
@@ -153,15 +178,24 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
 
     elif command[0] == "add":
         if len(command) != 3:
-            print("[Cliff] Usage: add [provider] [api-key]")
+            print("[Cliff] Usage: add [provider] [api-key] or add ollama [model]")
             return 1
-        return add_provider(command[1], command[2])
+        if command[1] == "ollama":
+            return add_ollama(command[2])
+        else:
+            return add_provider(command[1], command[2])
 
     elif command[0] == "remove":
-        if len(command) != 2:
-            print("[Cliff] Usage: remove [provider]")
+        if len(command) < 2:
+            print("[Cliff] Usage: remove [provider] or remove ollama [model]")
             return 1
-        return remove_provider(command[1])
+        if command[1] == "ollama":
+            if len(command) != 3:
+                print("[Cliff] Usage: remove ollama [model]")
+                return 1
+            return remove_ollama(command[2])
+        else:
+            return remove_provider(command[1])
 
     elif command[0] == "default-model":
         if len(command) != 2:
