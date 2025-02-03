@@ -38,8 +38,8 @@ prefer
       you have a model that's available from multiple providers, as running
       the model without specifying this will cause an error due to ambiguity.
     - Usage:
-        cliff --config prefer [model] [provider]   Add preferred provider
-        cliff --config prefer remove [model]       Remove preferred provider
+        cliff --config prefer [model] [provider]  Add provider preference
+        cliff --config prefer remove [model]      Remove provider preference
     - Examples:
         cliff --config prefer llama-3.1-8b groq
         cliff --config prefer remove llama-3.1-8b
