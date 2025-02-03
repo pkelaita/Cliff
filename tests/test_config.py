@@ -10,7 +10,7 @@ from cliff.config import (
     add_provider,
     remove_provider,
     set_default_model,
-    view_config,
+    show_config,
     process_config_command,
     CONFIG_FILE,
     DEFAULT_CONFIG,
@@ -209,11 +209,11 @@ def test_set_default_model_not_active(mock_active, mock_available):
     "cliff.config.load_config",
     return_value={"provider_credentials": {}, "default_model": None},
 )
-def test_view_config(mock_load_config, capsys):
+def test_show_config(mock_load_config, capsys):
     """
-    view_config() should print the config and return 0. We'll just check the return code.
+    show_config() should print the config and return 0. We'll just check the return code.
     """
-    result = view_config()
+    result = show_config()
     captured = capsys.readouterr()
     assert result == 0
     assert "provider_credentials" in captured.out
@@ -252,14 +252,14 @@ def test_process_config_command_set_default_model(mock_set_default_model):
     assert result == 0
 
 
-@patch("cliff.config.view_config", return_value=0)
-def test_process_config_command_view(mock_view_config):
+@patch("cliff.config.show_config", return_value=0)
+def test_process_config_command_show(mock_show_config):
     """
-    process_config_command should invoke view_config when "view" is specified.
+    process_config_command should invoke show_config when "show" is specified.
     """
     llm = LLMClient()
-    result = process_config_command(["view"], llm)
-    mock_view_config.assert_called_once()
+    result = process_config_command(["show"], llm)
+    mock_show_config.assert_called_once()
     assert result == 0
 
 

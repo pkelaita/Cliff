@@ -23,9 +23,9 @@ remove [provider]
       including its stored API key.
     - Usage Example: cliff --config remove openai
 
-view
+show
     - Prints the entire configuration as JSON.
-    - Usage: cliff --config view
+    - Usage: cliff --config show
 
 help
     - Prints this message.

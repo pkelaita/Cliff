@@ -117,7 +117,7 @@ def set_default_model(model: str, llm: LLMClient) -> int:
     return 0
 
 
-def view_config() -> int:
+def show_config() -> int:
     config = load_config()
     print(json.dumps(config, indent=4))
     return 0
@@ -147,11 +147,11 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
             return 1
         return set_default_model(command[1], llm)
 
-    elif command[0] == "view":
-        return view_config()
+    elif command[0] == "show":
+        return show_config()
 
     else:
         print(
-            f"[Cliff] expected either add, remove, default-model, view, or help, got {command[0]}"
+            f"[Cliff] expected either add, remove, default-model, show, or help, got {command[0]}"
         )
         return 1
