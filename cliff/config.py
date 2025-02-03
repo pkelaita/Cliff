@@ -75,7 +75,8 @@ def add_provider(provider: str, api_key: str) -> int:
 
     if config["default_model"] is None:
         config["default_model"] = DEFAULT_MODEL_MAPPING[provider]  # type: ignore
-        save_config(config)
+
+    save_config(config)
 
     if exists:
         print(f"[Cliff] Updated provider {provider}")
@@ -103,17 +104,10 @@ def remove_provider(provider: str) -> int:
 
 
 def set_default_model(model: str, llm: LLMClient) -> int:
-    available_models = LLMClient.get_available_models()
-    if model not in available_models:
-        print(f"[Cliff] Model {model} not found")
-        return 1
-
     active_models = llm.get_active_models()
     if model not in active_models:
-        print(
-            f"[Cliff] Model {model} available but not active. Please add its provider first."
-        )
-        return 2
+        print(f"[Cliff] Model {model} not found")
+        return 1
 
     config = load_config()
     config["default_model"] = model  # type: ignore

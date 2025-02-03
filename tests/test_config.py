@@ -109,7 +109,7 @@ def test_add_provider_valid_update(mock_save_config, mock_load_config):
         "default_model": "gpt-4o",
     }
     result = add_provider("openai", "new_key")
-    mock_save_config.assert_not_called()
+    mock_save_config.assert_called_once()
     assert result == 0
 
 
@@ -202,7 +202,7 @@ def test_set_default_model_not_active(mock_active, mock_available):
     """
     llm = LLMClient()
     result = set_default_model("gpt-4o", llm)
-    assert result == 2
+    assert result == 1
 
 
 @patch(
