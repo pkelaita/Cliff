@@ -184,6 +184,15 @@ cliff --config add ollama [model]
 
         try:
             result_dict = json.loads(result)
+
+            if "command" not in result_dict:
+                print(
+                    """[Cliff] Sorry, the LLM returned a bad response. If this persists, try
+clearing Cliff's memory with cliff --memory clear, and if that still
+doesn't work, try switching to a different model."""
+                )
+                sys.exit(1)
+
             command = result_dict["command"]
             subprocess.run(["pbcopy"], input=command, text=True)
         except json.JSONDecodeError:

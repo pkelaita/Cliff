@@ -260,6 +260,36 @@ def test_main_invalid_json_response(
     assert "Error: Invalid JSON response" in captured.out
 
 
+@patch("cliff.cliff.load_config")
+@patch("cliff.cliff.apply_config")
+@patch("cliff.cliff.load_memory")
+@patch("l2m2.client.LLMClient.call")
+@patch("l2m2.client.LLMClient.get_active_models")
+def test_main_bad_llm_response(
+    mock_get_active_models,
+    mock_llm_call,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    monkeypatch,
+):
+    """
+    main() should handle LLM response missing 'command' key.
+    """
+    mock_load_config.return_value = {
+        "default_model": "test-model",
+        "provider_credentials": {"test": "key"},
+    }
+    mock_get_active_models.return_value = ["test-model"]
+    mock_llm_call.return_value = '{"some_other_key": "value"}'
+
+    monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
+
+    with pytest.raises(SystemExit) as e:
+        main()
+    assert e.value.code == 1
+
+
 # -- Tests for Model Selection -- #
 
 
