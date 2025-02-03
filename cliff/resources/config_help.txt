@@ -7,9 +7,9 @@ USAGE
 COMMANDS
 add [provider] [api-key]
     - Adds or updates a specified provider with the given API key.
-    - Usage Example: cliff --config add openai sk-abc123
     - Available providers: openai, anthropic, google, cohere, groq,
       replicate, mistral, cerebras.
+    - Usage Example: cliff --config add openai sk-abc123
 
 default-model [model]
     - Sets the default model Cliff will use.
@@ -22,6 +22,17 @@ remove [provider]
     - Removes the specified provider from the configuration,
       including its stored API key.
     - Usage Example: cliff --config remove openai
+
+prefer
+    - Manages preferred providers for specific models. This is essential if
+      you have a model that's available from multiple providers, as running
+      the model without specifying this will cause an error due to ambiguity.
+    - Usage:
+        cliff --config prefer [model] [provider]   Add preferred provider
+        cliff --config prefer remove [model]       Remove preferred provider
+    - Examples:
+        cliff --config prefer llama-3.1-8b groq
+        cliff --config prefer remove llama-3.1-8b
 
 show
     - Prints the entire configuration as JSON.

@@ -15,7 +15,12 @@ from cliff.config import (
     CONFIG_FILE,
     DEFAULT_CONFIG,
     HELP_FILE,
+    prefer_add,
+    prefer_remove,
 )
+
+
+# -- Tests for Config File Operations -- #
 
 
 @patch("os.path.exists", return_value=False)
@@ -68,6 +73,9 @@ def test_save_config(mock_json_dump, mock_file):
     mock_json_dump.assert_called_once_with(test_config, mock_file())
 
 
+# -- Tests for Provider Management -- #
+
+
 @patch("l2m2.client.LLMClient")
 def test_apply_config(mock_llm_client):
     """
@@ -77,6 +85,7 @@ def test_apply_config(mock_llm_client):
     test_config = {
         "provider_credentials": {"openai": "secret_key", "anthropic": "another_key"},
         "default_model": None,
+        "preferred_providers": {},
     }
     apply_config(test_config, mock_llm)
     mock_llm.add_provider.assert_any_call("openai", "secret_key")
@@ -107,6 +116,7 @@ def test_add_provider_valid_update(mock_save_config, mock_load_config):
     mock_load_config.return_value = {
         "provider_credentials": {"openai": "old_key"},
         "default_model": "gpt-4o",
+        "preferred_providers": {},
     }
     result = add_provider("openai", "new_key")
     mock_save_config.assert_called_once()
@@ -126,6 +136,7 @@ def test_add_provider_invalid():
     return_value={
         "provider_credentials": {"openai": "secret_key"},
         "default_model": "gpt-4o",
+        "preferred_providers": {},
     },
 )
 @patch("cliff.config.save_config")
@@ -143,6 +154,7 @@ def test_remove_provider_existing(mock_save_config, mock_load_config):
     return_value={
         "provider_credentials": {"openai": "secret_key"},
         "default_model": "gpt-4o",
+        "preferred_providers": {},
     },
 )
 @patch("cliff.config.save_config")
@@ -155,6 +167,9 @@ def test_remove_provider_nonexistent(mock_save_config, mock_load_config):
     assert result == 1
 
 
+# -- Tests for Default Model Management -- #
+
+
 @patch(
     "l2m2.client.LLMClient.get_available_models",
     return_value=["gpt-4o", "claude-3.5-haiku"],
@@ -165,6 +180,7 @@ def test_remove_provider_nonexistent(mock_save_config, mock_load_config):
     return_value={
         "provider_credentials": {"openai": "test_key"},
         "default_model": "gpt-4o",
+        "preferred_providers": {},
     },
 )
 @patch("cliff.config.save_config")
@@ -205,6 +221,60 @@ def test_set_default_model_not_active(mock_active, mock_available):
     assert result == 1
 
 
+# -- Tests for Preferred Provider Management -- #
+
+
+@patch("cliff.config.load_config")
+@patch("cliff.config.save_config")
+def test_prefer_add_success(mock_save_config, mock_load_config):
+    """
+    prefer_add() should add a preferred provider for a model and return 0.
+    """
+    mock_load_config.return_value = {
+        "provider_credentials": {"openai": "test_key"},
+        "default_model": "gpt-4o",
+        "preferred_providers": {},
+    }
+    result = prefer_add("gpt-4o", "openai")
+    mock_save_config.assert_called_once()
+    assert result == 0
+
+
+@patch("cliff.config.load_config")
+@patch("cliff.config.save_config")
+def test_prefer_remove_success(mock_save_config, mock_load_config):
+    """
+    prefer_remove() should remove a preferred provider for a model and return 0.
+    """
+    mock_load_config.return_value = {
+        "provider_credentials": {"openai": "test_key"},
+        "default_model": "gpt-4o",
+        "preferred_providers": {"gpt-4o": "openai"},
+    }
+    result = prefer_remove("gpt-4o")
+    mock_save_config.assert_called_once()
+    assert result == 0
+
+
+@patch("cliff.config.load_config")
+@patch("cliff.config.save_config")
+def test_prefer_remove_nonexistent(mock_save_config, mock_load_config):
+    """
+    prefer_remove() should return 1 if the model has no preferred provider.
+    """
+    mock_load_config.return_value = {
+        "provider_credentials": {"openai": "test_key"},
+        "default_model": "gpt-4o",
+        "preferred_providers": {},
+    }
+    result = prefer_remove("gpt-4o")
+    mock_save_config.assert_not_called()
+    assert result == 1
+
+
+# -- Tests for Config Display -- #
+
+
 @patch(
     "cliff.config.load_config",
     return_value={"provider_credentials": {}, "default_model": None},
@@ -217,6 +287,9 @@ def test_show_config(mock_load_config, capsys):
     captured = capsys.readouterr()
     assert result == 0
     assert "provider_credentials" in captured.out
+
+
+# -- Tests for Command Processing -- #
 
 
 @patch("cliff.config.add_provider", return_value=0)
@@ -308,3 +381,34 @@ def test_process_config_command_help(mock_file):
     result = process_config_command(["help"], llm)
     mock_file.assert_called_once_with(HELP_FILE, "r")
     assert result == 0
+
+
+@patch("cliff.config.prefer_add", return_value=0)
+def test_process_config_command_prefer_add(mock_prefer_add):
+    """
+    process_config_command should invoke prefer_add when "prefer" is specified with a model and provider.
+    """
+    llm = LLMClient()
+    result = process_config_command(["prefer", "gpt-4o", "openai"], llm)
+    mock_prefer_add.assert_called_once_with("gpt-4o", "openai")
+    assert result == 0
+
+
+@patch("cliff.config.prefer_remove", return_value=0)
+def test_process_config_command_prefer_remove(mock_prefer_remove):
+    """
+    process_config_command should invoke prefer_remove when "prefer remove" is specified.
+    """
+    llm = LLMClient()
+    result = process_config_command(["prefer", "remove", "gpt-4o"], llm)
+    mock_prefer_remove.assert_called_once_with("gpt-4o")
+    assert result == 0
+
+
+def test_process_config_command_prefer_usage():
+    """
+    process_config_command with "prefer" but incorrect arguments should return 1.
+    """
+    llm = LLMClient()
+    result = process_config_command(["prefer", "only-one-arg"], llm)
+    assert result == 1

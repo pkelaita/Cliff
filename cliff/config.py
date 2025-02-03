@@ -37,6 +37,7 @@ Config = Dict[str, Optional[Dict[str, str]]]
 DEFAULT_CONFIG: Config = {
     "provider_credentials": {},
     "default_model": None,
+    "preferred_providers": {},
 }
 
 
@@ -56,6 +57,8 @@ def load_config() -> Config:
 def apply_config(config: Config, llm: LLMClient) -> None:
     for provider in config["provider_credentials"]:  # type: ignore
         llm.add_provider(provider, config["provider_credentials"][provider])  # type: ignore
+
+    llm.set_preferred_providers(config["preferred_providers"])
 
 
 def save_config(config: Config) -> None:
@@ -117,6 +120,25 @@ def set_default_model(model: str, llm: LLMClient) -> int:
     return 0
 
 
+def prefer_add(model: str, provider: str) -> int:
+    config = load_config()
+    config["preferred_providers"][model] = provider  # type: ignore
+    save_config(config)
+    print(f"[Cliff] Added preferred provider {provider} for {model}")
+    return 0
+
+
+def prefer_remove(model: str) -> int:
+    config = load_config()
+    if model not in config["preferred_providers"]:  # type: ignore
+        print(f"[Cliff] Preferred provider for {model} not found")
+        return 1
+    del config["preferred_providers"][model]  # type: ignore
+    save_config(config)
+    print(f"[Cliff] Removed preferred provider for {model}")
+    return 0
+
+
 def show_config() -> int:
     config = load_config()
     print(json.dumps(config, indent=4))
@@ -146,6 +168,15 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
             print("[Cliff] Usage: default-model [model]")
             return 1
         return set_default_model(command[1], llm)
+
+    elif command[0] == "prefer":
+        if len(command) != 3:
+            print("[Cliff] Usage: prefer [model] [provider] or prefer remove [model]")
+            return 1
+        if command[1] == "remove":
+            return prefer_remove(command[2])
+        else:
+            return prefer_add(command[1], command[2])
 
     elif command[0] == "show":
         return show_config()
