@@ -165,9 +165,6 @@ cliff --config add ollama [model]
                 "os_name": os.uname().sysname,
                 "os_version": os.uname().release,
                 "cwd": CWD,
-                "ls_output": subprocess.run(
-                    ["ls", "-al"], capture_output=True, text=True
-                ).stdout,
                 "recall_prompt": recall_prompt,
             },
         )
