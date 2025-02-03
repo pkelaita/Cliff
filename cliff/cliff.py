@@ -4,21 +4,37 @@ import json
 import subprocess
 
 from l2m2.client import LLMClient
+from l2m2.memory import ChatMemory
 from l2m2.tools import PromptLoader
 
 HOME_DIR = os.path.expanduser("~")
 if not os.path.exists(os.path.join(HOME_DIR, ".cliff")):
-    os.makedirs(os.path.join(HOME_DIR, ".cliff"))
+    os.makedirs(os.path.join(HOME_DIR, ".cliff"))  # pragma: no cover
 
 if __name__ == "__main__":
-    from __init__ import __version__
-    from config import apply_config, load_config, process_config_command
+    from __init__ import __version__  # pragma: no cover
+    from config import (  # pragma: no cover
+        apply_config,
+        load_config,
+        process_config_command,
+        get_memory_window,
+    )
+    from memory import (
+        process_memory_command,
+        load_memory,
+        update_memory,
+    )  # pragma: no cover
 else:
     from cliff import __version__
-    from cliff.config import apply_config, load_config, process_config_command
+    from cliff.config import (
+        apply_config,
+        load_config,
+        process_config_command,
+        get_memory_window,
+    )
+    from cliff.memory import process_memory_command, load_memory, update_memory
 
 RECALL_FILE = os.path.join(HOME_DIR, ".cliff", "cliff_recall")
-
 DIR = os.path.dirname(os.path.abspath(__file__))
 MAN_PAGE = os.path.join(DIR, "resources", "man_page.txt")
 
@@ -29,14 +45,17 @@ POSSIBLE_FLAGS = [
     "--model",
     "-r",
     "--recall",
-    "-vr",
-    "--view-recall",
+    "-sr",
+    "--show-recall",
     "-cr",
     "--clear-recall",
     "--config",
+    "--memory",
 ]
 
 CWD = os.getcwd()
+
+WINDOW_SIZE = get_memory_window()
 
 
 def main() -> None:
@@ -45,7 +64,7 @@ def main() -> None:
     if len(args) == 0:
         with open(MAN_PAGE, "r") as f:
             print(f.read().replace("{{version}}", __version__))
-        sys.exit(0)
+        return
 
     flags = []
     model_arg = None
@@ -61,13 +80,18 @@ def main() -> None:
 
     content = " ".join(args)
     config_command = "--config" in flags
+    memory_command = "--memory" in flags
     view_version = "-v" in flags or "--version" in flags
     store_recall = "-r" in flags or "--recall" in flags
-    view_recall = "-vr" in flags or "--view-recall" in flags
+    show_recall = "-sr" in flags or "--show-recall" in flags
     clear_recall = "-cr" in flags or "--clear-recall" in flags
 
+    # load memory
+    mem = ChatMemory()
+    load_memory(mem, WINDOW_SIZE)
+    llm = LLMClient(memory=mem)
+
     # apply config
-    llm = LLMClient()
     config = load_config()
     apply_config(config, llm)
 
@@ -84,6 +108,9 @@ def main() -> None:
     if config_command:
         process_config_command(args, llm)
 
+    elif memory_command:
+        process_memory_command(args)
+
     elif view_version:
         print(f"[Cliff] Version {__version__}")
 
@@ -96,7 +123,7 @@ def main() -> None:
             s = f"{CWD} $ {content}\n{result}\n"
             f.write(s)
 
-    elif view_recall:
+    elif show_recall:
         if recall_content == "":
             print("[Cliff] No recalled commands.")
         else:
@@ -112,7 +139,14 @@ def main() -> None:
     else:
         if len(llm.get_active_models()) == 0:
             print(
-                "[Cliff] Welcome to Cliff! To get started, please add a provider by typing cliff --config add [provider] [api-key]"
+                """[Cliff] Welcome to Cliff! To get started, please either connect to an LLM provider by typing
+                
+cliff --config add [provider] [api-key]
+                
+or connect to a local model in Ollama by typing
+                
+cliff --config add ollama [model]
+"""
             )
             sys.exit(0)
 
@@ -160,7 +194,9 @@ def main() -> None:
 
         print(command)
 
+        update_memory(mem, WINDOW_SIZE)
 
-if __name__ == "__main__":
+
+if __name__ == "__main__":  # pragma: no cover
     print("[Cliff] dev mode")
     main()

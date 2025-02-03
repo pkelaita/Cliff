@@ -27,4 +27,4 @@ Please respond in this json format:
     "command": "the command to run"
 }
 
-The value of "command" should be a string that is a valid command to run on the command line, and absolutely nothing else.
+The value of "command" should be a string that is a valid command to run on the command line, and absolutely nothing else. Please only return one command in the JSON object.

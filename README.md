@@ -2,10 +2,10 @@
 
 Cliff (**C**ommand **L**ine **I**nter**F**ace **F**riend) is an AI assistant that helps you come up with Unix commands. Given an objective (for example, "kill the process running on port 8080"), Cliff will generate a command that does the objective and add it to your paste buffer for you to easily paste into your terminal.
 
-```zsh
-MacBookPro:~/Desktop $ cliff list the files here, along with their size in KB, in descending order by size
+```bash
+MacBookPro:~ $ cliff list my files and their sizes in KB, descending by size
 ls -lS | awk '$5 > 0 {printf "%-20s %8.2f KB\n", $9, $5/1024}'
-MacBookPro:~/Desktop $ ls -lS | awk '$5 > 0 {printf "%-20s %8.2f KB\n", $9, $5/1024}'
+MacBookPro:~ $ ls -lS | awk '$5 > 0 {printf "%-20s %8.2f KB\n", $9, $5/1024}'
 foo.txt                 10.29 KB
 bar.txt                  5.28 KB
 baz.txt                  2.61 KB
@@ -19,11 +19,11 @@ It's annoying having to open the browser when I forget how to do something in th
 
 ## Requirements
 
-- Python >= 3.9
 - At least one of the following:
   - A valid API key from [OpenAI](https://platform.openai.com/), [Anthropic](https://www.anthropic.com/api), [Google](https://ai.google.dev/), [Cohere](https://cohere.com/), [Groq](https://console.groq.com/login), [Replicate](https://replicate.com/), [Mistral](https://docs.mistral.ai/deployment/laplateforme/overview/), or [Cerebras](https://cloud.cerebras.ai/).
   - An LLM running locally with [Ollama](https://ollama.com/).
 - A Unix-like operating system
+- Python >= 3.9
 
 ## Installation
 
@@ -87,18 +87,24 @@ cliff "kill the process that's running on port 8080"
 If you want to specify which model to use, you can do so with the `--model` flag.
 
 ```
-cliff --model gpt-4o-mini kill the process running on port 8080
+cliff --model gpt-4o kill the process running on port 8080
 ```
 
-**Storing Command Outputs:**
+To view the man page, run `cliff` with no arguments.
 
-Optionally, you can share commands you've ran and their outputs with Cliff to help it debug and improve its responses.
+#### Chat Memory
+
+By default, Cliff has chat memory enabled with a sliding window size of 10 turns. You can view your memory with `cliff --memory show` and clear it with `cliff --memory clear`.
+
+If you'd like to change the window size, run `cliff --config memory-window [new size]`. If you want to disable memory, just set the window size to 0.
+
+#### Storing Command Outputs
+
+Cliff's chat memory does not have access to command outputs, but you can optionally share them with Cliff to help it debug and improve its responses.
 
 - To run a command and store its output for Cliff, run `cliff -r [command]` or `cliff --recall [command]`.
-- To view all recalled commands and their outputs, run `cliff --view-recall` or `cliff -vr`.
+- To view all recalled commands and their outputs, run `cliff --show-recall` or `cliff -sr`.
 - To clear Cliff's recall storage, run `cliff --clear-recall` or `cliff -cr`.
-
-To view the man page, run `cliff` with no arguments.
 
 That's it! It's pretty simple which is the point.
 

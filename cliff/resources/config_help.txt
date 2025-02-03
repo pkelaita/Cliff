@@ -34,15 +34,26 @@ default-model [model]
     - Usage Example: cliff --config default-model gpt-4o
 
 prefer
-    - Manages preferred providers for specific models. This is essential if
-      you have a model that's available from multiple providers, as running
-      the model without specifying this will cause an error due to ambiguity.
+    - Manages preferred providers for specific models. This is
+      essential if you have a model that's available from multiple
+      providers, as running the model without specifying this will
+      cause an error due to ambiguity.
     - Usage:
         cliff --config prefer [model] [provider]  Add provider preference
         cliff --config prefer remove [model]      Remove provider preference
     - Examples:
         cliff --config prefer llama-3.1-8b groq
         cliff --config prefer remove llama-3.1-8b
+
+memory-window [window-size]
+    - Sets the size of the conversation memory window.
+    - Tip: if you'd like to disable memory, set the window size to 0.
+    - Usage Example: cliff --config memory-window 15
+
+reset
+    - Resets the entire configuration to default values. This will
+      remove all providers, API keys, and preferences.
+    - Usage: cliff --config reset
 
 show
     - Prints the entire configuration as JSON.

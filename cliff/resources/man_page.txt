@@ -22,11 +22,14 @@ Options
     -r, --recall [command]
         Store the provided command and its output for future reference.
 
-    -vr, --view-recall
+    -sr, --show-recall
         Display all previously stored commands and their outputs.
 
     -cr, --clear-recall
         Clear all stored commands and their outputs.
+
+    --memory [show or clear]
+        Show or clear Cliff's chat memory.
 
     --config [options]
         Configure Cliff. See `cliff --config help` for more information.
