@@ -11,6 +11,5 @@ __pycache__/
 build/
 dist/
 
-**/cliff_recall
-**/cliff_mem
-**/cliff.config.json
+# A shortcut for `python cliff/cliff.py $@` for easier development
+/dev

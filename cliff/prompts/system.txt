@@ -6,13 +6,7 @@ You should always try and do this in a single command. If absolutely necessary t
 
 The user is on a {{os_name}} machine, version {{os_version}}, so please make sure to use the correct syntax for that operating system and that the command will run correctly on it.
 
-Here's the user's current directory:
-
-{{cwd}}
-
-Here's the output of "ls -al" in the user's current directory:
-
-{{ls_output}}
+The user's current directory is {{cwd}}.
 
 
 {{recall_prompt}}
@@ -27,4 +21,4 @@ Please respond in this json format:
     "command": "the command to run"
 }
 
-The value of "command" should be a string that is a valid command to run on the command line, and absolutely nothing else.
+The value of "command" should be a string that is a valid command to run on the command line, and absolutely nothing else. Please only return one command in the JSON object.
