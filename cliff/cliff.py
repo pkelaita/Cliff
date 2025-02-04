@@ -77,7 +77,7 @@ def main() -> None:
             model_arg = args.pop(0)
 
     if model_arg is None and ("-m" in flags or "--model" in flags):
-        print("[Cliff] Isage: cliff --model [model] [objective]")
+        print("[Cliff] Usage: cliff --model [model] [objective]")
         sys.exit(1)
 
     content = " ".join(args)
