@@ -1,8 +1,21 @@
 # Changelog
 
-_Current version: 0.1.0_
+_Current version: 0.1.1_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.1.1 - February 4, 2025
+
+#### Fixed
+
+- A bug where `cliff --memory show` would not truncate to the window size.
+- A typo in one of the usage messages ("isage" instead of "usage").
+- A bug where command outputs stored via `cliff --recall` would sometimes not be properly captured.
+
+#### Improved
+
+- The error message for a bad LLM response is now more consistent.
+- A simple loading animation is now shown when the LLM is generating a response.
 
 ### 0.1.0 - February 3, 2025
 
