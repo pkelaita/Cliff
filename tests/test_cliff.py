@@ -395,11 +395,13 @@ def test_main_model_flag_without_model(monkeypatch):
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
 def test_main_llm_timeout(
     mock_get_active_models,
     mock_llm_call,
+    mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
