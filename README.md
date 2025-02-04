@@ -56,15 +56,11 @@ Otherwise if you want to use a local model, add it like this:
 cliff --config add ollama [model]
 ```
 
-In order to use local models, make sure you have Ollama installed and running and have the model loaded ([their docs](https://github.com/ollama/ollama#readme)).
+_Configuration tips_
 
-You can set your default model with:
-
-```
-cliff --config default-model [model]
-```
-
-If you want to edit your config file directly, it's located at `~/.cliff/config.json`.
+- In order to use local models, make sure you have Ollama installed and running and have the model loaded ([their docs](https://github.com/ollama/ollama#readme)).
+- If you add multiple models, you can set your default model with: `cliff --config default-model [model]`.
+- If you want to edit your config file directly, it's located at `~/.cliff/config.json`.
 
 For a full overview of the configuration system, run `cliff --config help`, and for a full list of supported models for each provider, see [L2M2's docs](https://github.com/pkelaita/l2m2/blob/main/docs/supported_models.md).
 
