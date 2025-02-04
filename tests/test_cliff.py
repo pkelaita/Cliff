@@ -100,11 +100,16 @@ def test_main_store_recall(
     main() with recall flag should store command output.
     """
     mock_subprocess.return_value.stdout = "command output"
+    mock_subprocess.return_value.stderr = ""
     recall_file = tmp_path / "recall"
     monkeypatch.setattr("cliff.cliff.RECALL_FILE", str(recall_file))
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-r", "ls", "-l"])
+    monkeypatch.setattr("sys.argv", ["cliff.py", "-r", "ls -l"])
 
     main()
+
+    mock_subprocess.assert_called_once_with(
+        "ls -l", shell=True, capture_output=True, text=True
+    )
 
     assert recall_file.read_text().strip() == f"{CWD} $ ls -l\ncommand output"
 

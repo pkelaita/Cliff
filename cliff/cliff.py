@@ -115,13 +115,15 @@ def main() -> None:
         print(f"[Cliff] Version {__version__}")
 
     elif store_recall:
-        print("[Cliff] Recalling this command and its output")
-        result = subprocess.run(content.split(), capture_output=True, text=True).stdout
-        print(result)
+        cmd_result = subprocess.run(content, shell=True, capture_output=True, text=True)
+        output = cmd_result.stdout + cmd_result.stderr
+        print(output, end="")
 
         with open(RECALL_FILE, "a") as f:
-            s = f"{CWD} $ {content}\n{result}\n"
+            s = f"{CWD} $ {content}\n{output}\n"
             f.write(s)
+
+        print("[Cliff] Recalled this command and its output")
 
     elif show_recall:
         if recall_content == "":
