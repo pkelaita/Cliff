@@ -111,7 +111,7 @@ def main() -> None:
         process_config_command(args, llm)
 
     elif memory_command:
-        process_memory_command(args)
+        process_memory_command(args, WINDOW_SIZE)
 
     elif view_version:
         print(f"[Cliff] Version {__version__}")
