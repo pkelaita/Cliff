@@ -53,9 +53,10 @@ def update_memory(mem: ChatMemory, window_size: int) -> int:
     return 0
 
 
-def show_memory() -> int:
+def show_memory(window_size: int) -> int:
     with open(MEMORY_FILE, "r") as f:
         data = json.load(f)
+        data = _truncate(data, window_size)
 
         if len(data) == 0:
             print("[Cliff] Memory is empty.")
@@ -72,7 +73,7 @@ def show_memory() -> int:
     return 0
 
 
-def process_memory_command(command: List[str]) -> int:
+def process_memory_command(command: List[str], window_size: int) -> int:
     if len(command) == 0 or command[0] not in ("show", "clear"):
         print("[Cliff] Usage: cliff --memory [show or clear]")
         return 1
@@ -83,5 +84,5 @@ def process_memory_command(command: List[str]) -> int:
         return 0
 
     else:  # show
-        show_memory()
+        show_memory(window_size)
         return 0

@@ -11,8 +11,14 @@ from cliff.cliff import main, MAN_PAGE, CWD
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.update_memory")
+@patch("cliff.cliff.LoadingAnimation")
 def test_main_no_args(
-    mock_update_mem, mock_load_mem, mock_apply_config, mock_load_config, monkeypatch
+    mock_loading,
+    mock_update_mem,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    monkeypatch,
 ):
     """
     main() with no args should display man page and return.
@@ -28,7 +34,9 @@ def test_main_no_args(
 @patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.update_memory")
 @patch("cliff.cliff.__version__", "1.0.0")
+@patch("cliff.cliff.LoadingAnimation")
 def test_main_version_flag(
+    mock_loading,
     mock_update_mem,
     mock_load_mem,
     mock_apply_config,
@@ -52,8 +60,14 @@ def test_main_version_flag(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 def test_main_config_command(
-    mock_load_mem, mock_apply_config, mock_load_config, mock_process_config, monkeypatch
+    mock_loading,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    mock_process_config,
+    monkeypatch,
 ):
     """
     main() with config command should invoke process_config_command.
@@ -70,8 +84,14 @@ def test_main_config_command(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 def test_main_memory_command(
-    mock_load_mem, mock_apply_config, mock_load_config, mock_process_memory, monkeypatch
+    mock_loading,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    mock_process_memory,
+    monkeypatch,
 ):
     """
     main() with memory command should invoke process_memory_command.
@@ -88,7 +108,9 @@ def test_main_memory_command(
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.subprocess.run")
+@patch("cliff.cliff.LoadingAnimation")
 def test_main_store_recall(
+    mock_loading,
     mock_subprocess,
     mock_load_mem,
     mock_apply_config,
@@ -100,11 +122,16 @@ def test_main_store_recall(
     main() with recall flag should store command output.
     """
     mock_subprocess.return_value.stdout = "command output"
+    mock_subprocess.return_value.stderr = ""
     recall_file = tmp_path / "recall"
     monkeypatch.setattr("cliff.cliff.RECALL_FILE", str(recall_file))
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-r", "ls", "-l"])
+    monkeypatch.setattr("sys.argv", ["cliff.py", "-r", "ls -l"])
 
     main()
+
+    mock_subprocess.assert_called_once_with(
+        "ls -l", shell=True, capture_output=True, text=True
+    )
 
     assert recall_file.read_text().strip() == f"{CWD} $ ls -l\ncommand output"
 
@@ -112,8 +139,14 @@ def test_main_store_recall(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 def test_main_show_recall_empty(
-    mock_load_mem, mock_apply_config, mock_load_config, monkeypatch, capsys
+    mock_loading,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    monkeypatch,
+    capsys,
 ):
     """
     main() with show-recall flag should handle empty recall file.
@@ -128,8 +161,14 @@ def test_main_show_recall_empty(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 def test_main_show_recall_with_content(
-    mock_load_mem, mock_apply_config, mock_load_config, monkeypatch, capsys
+    mock_loading,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    monkeypatch,
+    capsys,
 ):
     """
     main() with show-recall flag should display recall content.
@@ -145,8 +184,14 @@ def test_main_show_recall_with_content(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 def test_main_clear_recall(
-    mock_load_mem, mock_apply_config, mock_load_config, monkeypatch, capsys
+    mock_loading,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    monkeypatch,
+    capsys,
 ):
     """
     main() with clear-recall flag should clear recall file.
@@ -170,9 +215,11 @@ def test_main_clear_recall(
 @patch("l2m2.client.LLMClient.call")
 @patch("cliff.cliff.subprocess.run")
 @patch("l2m2.client.LLMClient.get_active_models")
+@patch("cliff.cliff.LoadingAnimation")
 @patch("builtins.open", new_callable=mock_open, read_data="man page content")
 def test_main_generate_command(
     mock_file,
+    mock_loading,
     mock_get_active_models,
     mock_subprocess,
     mock_llm_call,
@@ -203,11 +250,13 @@ def test_main_generate_command(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
 def test_main_no_active_models(
     mock_get_active_models,
     mock_llm_call,
+    mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
@@ -232,11 +281,13 @@ def test_main_no_active_models(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
 def test_main_invalid_json_response(
     mock_get_active_models,
     mock_llm_call,
+    mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
@@ -257,21 +308,24 @@ def test_main_invalid_json_response(
 
     main()
     captured = capsys.readouterr()
-    assert "Error: Invalid JSON response" in captured.out
+    assert "bad or malformed response" in captured.out
 
 
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
 def test_main_bad_llm_response(
     mock_get_active_models,
     mock_llm_call,
+    mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
     monkeypatch,
+    capsys,
 ):
     """
     main() should handle LLM response missing 'command' key.
@@ -285,9 +339,9 @@ def test_main_bad_llm_response(
 
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
-    with pytest.raises(SystemExit) as e:
-        main()
-    assert e.value.code == 1
+    main()
+    captured = capsys.readouterr()
+    assert "bad or malformed response" in captured.out
 
 
 # -- Tests for Model Selection -- #
@@ -296,11 +350,13 @@ def test_main_bad_llm_response(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
 def test_main_specific_model(
     mock_get_active_models,
     mock_llm_call,
+    mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
@@ -339,11 +395,13 @@ def test_main_model_flag_without_model(monkeypatch):
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
 def test_main_llm_timeout(
     mock_get_active_models,
     mock_llm_call,
+    mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,

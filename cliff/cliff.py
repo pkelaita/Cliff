@@ -24,6 +24,7 @@ if __name__ == "__main__":
         load_memory,
         update_memory,
     )  # pragma: no cover
+    from animations import LoadingAnimation  # pragma: no cover
 else:
     from cliff import __version__
     from cliff.config import (
@@ -33,6 +34,7 @@ else:
         get_memory_window,
     )
     from cliff.memory import process_memory_command, load_memory, update_memory
+    from cliff.animations import LoadingAnimation
 
 RECALL_FILE = os.path.join(HOME_DIR, ".cliff", "cliff_recall")
 DIR = os.path.dirname(os.path.abspath(__file__))
@@ -75,7 +77,7 @@ def main() -> None:
             model_arg = args.pop(0)
 
     if model_arg is None and ("-m" in flags or "--model" in flags):
-        print("[Cliff] Isage: cliff --model [model] [objective]")
+        print("[Cliff] Usage: cliff --model [model] [objective]")
         sys.exit(1)
 
     content = " ".join(args)
@@ -109,19 +111,21 @@ def main() -> None:
         process_config_command(args, llm)
 
     elif memory_command:
-        process_memory_command(args)
+        process_memory_command(args, WINDOW_SIZE)
 
     elif view_version:
         print(f"[Cliff] Version {__version__}")
 
     elif store_recall:
-        print("[Cliff] Recalling this command and its output")
-        result = subprocess.run(content.split(), capture_output=True, text=True).stdout
-        print(result)
+        cmd_result = subprocess.run(content, shell=True, capture_output=True, text=True)
+        output = cmd_result.stdout + cmd_result.stderr
+        print(output, end="")
 
         with open(RECALL_FILE, "a") as f:
-            s = f"{CWD} $ {content}\n{result}\n"
+            s = f"{CWD} $ {content}\n{output}\n"
             f.write(s)
+
+        print("[Cliff] Recalled this command and its output")
 
     elif show_recall:
         if recall_content == "":
@@ -174,33 +178,37 @@ cliff --config add ollama [model]
         else:
             model = config["default_model"]
 
-        result = llm.call(
-            model=model,
-            prompt=content,
-            system_prompt=sysprompt,
-            json_mode=True,
-            timeout=25,
-        )
+        with LoadingAnimation():
+            result = llm.call(
+                model=model,
+                prompt=content,
+                system_prompt=sysprompt,
+                json_mode=True,
+                timeout=25,
+            )
 
+        valid = True
         try:
             result_dict = json.loads(result)
 
             if "command" not in result_dict:
-                print(
-                    """[Cliff] Sorry, the LLM returned a bad response. If this persists, try
-clearing Cliff's memory with cliff --memory clear, and if that still
-doesn't work, try switching to a different model."""
-                )
-                sys.exit(1)
+                valid = False
+            else:
+                command = result_dict["command"]
 
-            command = result_dict["command"]
-            subprocess.run(["pbcopy"], input=command, text=True)
         except json.JSONDecodeError:
-            command = "Error: Invalid JSON response from the LLM."
+            valid = False
 
-        print(command)
-
-        update_memory(mem, WINDOW_SIZE)
+        if valid:
+            print(command)
+            subprocess.run(["pbcopy"], input=command, text=True)
+            update_memory(mem, WINDOW_SIZE)
+        else:
+            print(
+                """[Cliff] Sorry, the LLM returned a bad or malformed response. If this
+persists, try clearing Cliff's memory with cliff --memory clear, and
+if that still doesn't work, try switching to a different model."""
+            )
 
 
 if __name__ == "__main__":  # pragma: no cover

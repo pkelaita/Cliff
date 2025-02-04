@@ -88,11 +88,15 @@ cliff --model gpt-4o kill the process running on port 8080
 
 To view the man page, run `cliff` with no arguments.
 
+---
+
 #### Chat Memory
 
 By default, Cliff has chat memory enabled with a sliding window size of 10 turns. You can view your memory with `cliff --memory show` and clear it with `cliff --memory clear`.
 
 If you'd like to change the window size, run `cliff --config memory-window [new size]`. If you want to disable memory, just set the window size to 0.
+
+---
 
 #### Storing Command Outputs
 
@@ -101,6 +105,10 @@ Cliff's chat memory does not have access to command outputs, but you can optiona
 - To run a command and store its output for Cliff, run `cliff -r [command]` or `cliff --recall [command]`.
 - To view all recalled commands and their outputs, run `cliff --show-recall` or `cliff -sr`.
 - To clear Cliff's recall storage, run `cliff --clear-recall` or `cliff -cr`.
+
+_Tip:_ You'll usually have to put quotes around your command if it contains special characters – e.g., `cliff -r "ps ax | head -n 10"` – for Cliff to properly capture and execute it.
+
+---
 
 That's it! It's pretty simple which is the point.
 

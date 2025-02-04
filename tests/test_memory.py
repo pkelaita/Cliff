@@ -97,12 +97,40 @@ def test_show_memory(mock_file, capsys):
     """
     show_memory() should print the memory contents in a readable format.
     """
-    result = show_memory()
+    result = show_memory(10)
     captured = capsys.readouterr()
 
     assert result == 0
     assert "User: first message" in captured.out
     assert "Cliff: first response" in captured.out
+    assert "User: second message" in captured.out
+    assert "Cliff: second response" in captured.out
+    assert "User: third message" in captured.out
+    assert "Cliff: third response" in captured.out
+
+
+@patch(
+    "builtins.open",
+    new_callable=mock_open,
+    read_data="""[
+        {"role": "user", "content": "first message"},
+        {"role": "assistant", "content": "{\\"command\\": \\"first response\\"}"},
+        {"role": "user", "content": "second message"},
+        {"role": "assistant", "content": "{\\"command\\": \\"second response\\"}"},
+        {"role": "user", "content": "third message"},
+        {"role": "assistant", "content": "{\\"command\\": \\"third response\\"}"}
+    ]""",
+)
+def test_show_memory_truncated(mock_file, capsys):
+    """
+    show_memory() should truncate the memory contents to the window size.
+    """
+    result = show_memory(2)
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "User: first message" not in captured.out
+    assert "Cliff: first response" not in captured.out
     assert "User: second message" in captured.out
     assert "Cliff: second response" in captured.out
     assert "User: third message" in captured.out
@@ -118,7 +146,7 @@ def test_show_memory_empty(mock_file, capsys):
     """
     show_memory() should handle empty memory gracefully.
     """
-    result = show_memory()
+    result = show_memory(10)
     captured = capsys.readouterr()
 
     assert result == 0
@@ -178,7 +206,7 @@ def test_process_memory_command_show(mock_show_memory):
     """
     process_memory_command should invoke show_memory when "show" is specified.
     """
-    result = process_memory_command(["show"])
+    result = process_memory_command(["show"], 10)
     mock_show_memory.assert_called_once()
     assert result == 0
 
@@ -188,7 +216,7 @@ def test_process_memory_command_clear(mock_clear_memory):
     """
     process_memory_command should invoke clear_memory when "clear" is specified.
     """
-    result = process_memory_command(["clear"])
+    result = process_memory_command(["clear"], 10)
     mock_clear_memory.assert_called_once()
     assert result == 0
 
@@ -197,7 +225,7 @@ def test_process_memory_command_invalid():
     """
     process_memory_command with an invalid command should return 1.
     """
-    result = process_memory_command(["invalid"])
+    result = process_memory_command(["invalid"], 10)
     assert result == 1
 
 
@@ -205,5 +233,5 @@ def test_process_memory_command_empty():
     """
     process_memory_command with no command should return 1.
     """
-    result = process_memory_command([])
+    result = process_memory_command([], 10)
     assert result == 1
