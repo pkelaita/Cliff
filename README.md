@@ -115,4 +115,5 @@ That's it! It's pretty simple which is the point.
 ## Planned Features
 
 - Regular updates with new models, etc.
+- UX improvements: cosmetic updates, model aliases, etc.
 - Not sure what else this thing really needs, but open to suggestions!
