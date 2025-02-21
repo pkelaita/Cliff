@@ -101,11 +101,11 @@ def test_show_memory(mock_file, capsys):
     captured = capsys.readouterr()
 
     assert result == 0
-    assert "User: first message" in captured.out
+    assert "User:  first message" in captured.out
     assert "Cliff: first response" in captured.out
-    assert "User: second message" in captured.out
+    assert "User:  second message" in captured.out
     assert "Cliff: second response" in captured.out
-    assert "User: third message" in captured.out
+    assert "User:  third message" in captured.out
     assert "Cliff: third response" in captured.out
 
 
@@ -129,11 +129,11 @@ def test_show_memory_truncated(mock_file, capsys):
     captured = capsys.readouterr()
 
     assert result == 0
-    assert "User: first message" not in captured.out
+    assert "User:  first message" not in captured.out
     assert "Cliff: first response" not in captured.out
-    assert "User: second message" in captured.out
+    assert "User:  second message" in captured.out
     assert "Cliff: second response" in captured.out
-    assert "User: third message" in captured.out
+    assert "User:  third message" in captured.out
     assert "Cliff: third response" in captured.out
 
 

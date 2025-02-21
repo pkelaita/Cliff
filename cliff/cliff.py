@@ -15,6 +15,7 @@ from cliff.config import (
     get_memory_window,
 )
 from cliff.memory import process_memory_command, load_memory, update_memory
+from cliff.notepad import process_notepad_command
 from cliff.console import LoadingAnimation, cliff_print
 
 HOME_DIR = os.path.expanduser("~")
@@ -38,6 +39,8 @@ POSSIBLE_FLAGS = [
     "--clear-recall",
     "--config",
     "--memory",
+    "-n",
+    "--notepad",
 ]
 
 CWD = os.getcwd()
@@ -68,6 +71,7 @@ def main() -> None:
     content = " ".join(args)
     config_command = "--config" in flags
     memory_command = "--memory" in flags
+    notepad_command = "-n" in flags or "--notepad" in flags
     view_version = "-v" in flags or "--version" in flags
     store_recall = "-r" in flags or "--recall" in flags
     show_recall = "-sr" in flags or "--show-recall" in flags
@@ -97,6 +101,9 @@ def main() -> None:
 
     elif memory_command:
         process_memory_command(args, WINDOW_SIZE)
+
+    elif notepad_command:
+        process_notepad_command(args)
 
     elif view_version:
         cliff_print(f"Version {__version__}")

@@ -7,6 +7,8 @@ from rich.console import Console
 
 loading_frames: List[str] = ["⠋ ", "⠙ ", "⠹ ", "⠸ ", "⠼ ", "⠴ ", "⠦ ", "⠧ ", "⠇ ", "⠏ "]
 
+console = Console()
+
 
 def _animate(stop_event: threading.Event, delay: float = 0.05) -> None:
     while not stop_event.is_set():
@@ -54,5 +56,5 @@ class LoadingAnimation:
 
 
 def cliff_print(message: str) -> None:
-    console = Console()
-    console.print(f"[cyan][Cliff][/cyan] {message}", highlight=False)
+    console.print("[cyan][Cliff][/cyan]", highlight=False, end=" ")
+    print(message)
