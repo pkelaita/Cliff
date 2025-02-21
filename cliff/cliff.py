@@ -154,6 +154,19 @@ cliff --config add ollama [model]
             )
             sys.exit(0)
 
+        if config["default_model"] is None and model_arg is None:
+            print(
+                """[Cliff] It looks like you haven't yet set a default model. You can set a default model by typing
+                
+cliff --config default-model [model]
+
+Alternatively, you can call Cliff with a specific model by typing
+
+cliff --model [model] [objective]
+"""
+            )
+            sys.exit(0)
+
         pl = PromptLoader(prompts_base_dir=os.path.join(DIR, "prompts"))
 
         recall_prompt = ""
