@@ -12,5 +12,5 @@ __pycache__/
 build/
 dist/
 
-# A shortcut for `python cliff/cliff.py $@` for easier development
+# A shortcut for `python -m cliff.cliff $@` for easier development
 /dev
