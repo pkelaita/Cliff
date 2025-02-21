@@ -2,6 +2,7 @@ from typing import List, Dict
 import os
 import json
 
+from rich import print as rprint
 from l2m2.memory import ChatMemory
 
 from cliff.console import cliff_print
@@ -65,12 +66,15 @@ def show_memory(window_size: int) -> int:
 
         for entry in data:
             if entry["role"] == "user":
-                print(f"User: {entry['content']}")
+                rprint("[magenta]User:[/magenta]", end="  ")
+                print(entry["content"])
             elif entry["role"] == "assistant":
                 content_data = json.loads(entry["content"])
-                print(f"Cliff: {content_data['command']}")
+                rprint("[cyan]Cliff:[/cyan]", end=" ")
+                print(content_data["command"])
                 if entry != data[-1]:
                     print()
+        print()
     return 0
 
 

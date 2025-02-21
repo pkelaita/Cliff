@@ -1,10 +1,10 @@
 from typing import Dict, Optional, List, TypedDict
 import os
 import json
+
 from rich.console import Console
 from rich.table import Table
 from rich import box
-
 from l2m2.client import LLMClient
 
 from cliff.console import cliff_print
