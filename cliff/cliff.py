@@ -15,14 +15,13 @@ from cliff.config import (
     get_memory_window,
 )
 from cliff.memory import process_memory_command, load_memory, update_memory
-from cliff.notepad import process_notepad_command
+from cliff.notepad import process_notepad_command, load_notepad
 from cliff.console import LoadingAnimation, cliff_print
 
 HOME_DIR = os.path.expanduser("~")
 if not os.path.exists(os.path.join(HOME_DIR, ".cliff")):
     os.makedirs(os.path.join(HOME_DIR, ".cliff"))  # pragma: no cover
 
-RECALL_FILE = os.path.join(HOME_DIR, ".cliff", "cliff_recall")
 DIR = os.path.dirname(os.path.abspath(__file__))
 MAN_PAGE = os.path.join(DIR, "resources", "man_page.txt")
 
@@ -31,12 +30,7 @@ POSSIBLE_FLAGS = [
     "--version",
     "-m",
     "--model",
-    "-r",
-    "--recall",
-    "-sr",
-    "--show-recall",
-    "-cr",
-    "--clear-recall",
+    "-c",
     "--config",
     "--memory",
     "-n",
@@ -68,14 +62,10 @@ def main() -> None:
         cliff_print("Usage: cliff --model [model] [objective]")
         sys.exit(1)
 
-    content = " ".join(args)
-    config_command = "--config" in flags
+    view_version = "-v" in flags or "--version" in flags
+    config_command = "-c" in flags or "--config" in flags
     memory_command = "--memory" in flags
     notepad_command = "-n" in flags or "--notepad" in flags
-    view_version = "-v" in flags or "--version" in flags
-    store_recall = "-r" in flags or "--recall" in flags
-    show_recall = "-sr" in flags or "--show-recall" in flags
-    clear_recall = "-cr" in flags or "--clear-recall" in flags
 
     # load memory
     mem = ChatMemory()
@@ -85,15 +75,6 @@ def main() -> None:
     # apply config
     config = load_config()
     apply_config(config, llm)
-
-    # load recall content
-    recall_content = ""
-    if os.path.exists(RECALL_FILE):
-        with open(RECALL_FILE, "r") as f:
-            recall_content = f.read()
-    else:
-        with open(RECALL_FILE, "w") as f:
-            f.write("")
 
     # Check for options
     if config_command:
@@ -107,29 +88,6 @@ def main() -> None:
 
     elif view_version:
         cliff_print(f"Version {__version__}")
-
-    elif store_recall:
-        cmd_result = subprocess.run(content, shell=True, capture_output=True, text=True)
-        output = cmd_result.stdout + cmd_result.stderr
-        print(output, end="")
-
-        with open(RECALL_FILE, "a") as f:
-            s = f"{CWD} $ {content}\n{output}\n"
-            f.write(s)
-
-        cliff_print("Recalled this command and its output")
-
-    elif show_recall:
-        if recall_content == "":
-            cliff_print("No recalled commands.")
-        else:
-            cliff_print("Recalled commands:")
-            print(recall_content)
-
-    elif clear_recall:
-        with open(RECALL_FILE, "w") as f:
-            f.write("")
-        cliff_print("Cleared recalled commands.")
 
     # Run standard generation
     else:
@@ -161,11 +119,13 @@ cliff --model [model] [objective]
 
         pl = PromptLoader(prompts_base_dir=os.path.join(DIR, "prompts"))
 
-        recall_prompt = ""
-        if recall_content != "":
-            recall_prompt = pl.load_prompt(
-                "recall.txt",
-                variables={"recall_content": recall_content},
+        # load notepad content
+        notepad_prompt = ""
+        notepad_content = load_notepad()
+        if notepad_content != "":
+            notepad_prompt = pl.load_prompt(
+                "notepad.txt",
+                variables={"notepad_content": notepad_content},
             )
 
         sysprompt = pl.load_prompt(
@@ -174,7 +134,7 @@ cliff --model [model] [objective]
                 "os_name": os.uname().sysname,
                 "os_version": os.uname().release,
                 "cwd": CWD,
-                "recall_prompt": recall_prompt,
+                "notepad_prompt": notepad_prompt,
             },
         )
 
@@ -186,7 +146,7 @@ cliff --model [model] [objective]
         with LoadingAnimation():
             result = llm.call(
                 model=model,
-                prompt=content,
+                prompt=" ".join(args),
                 system_prompt=sysprompt,
                 json_mode=True,
                 timeout=25,

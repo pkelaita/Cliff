@@ -38,7 +38,14 @@ def run_notepad(content: str) -> None:
 
 def show_notepad() -> None:
     with open(NOTEPAD_FILE, "r") as f:
-        console.print(f.read())
+        content = f.read()
+        if content == "":
+            cliff_print(
+                "Notepad is empty. Use `cliff --notepad run [command]` to add to it."
+            )
+        else:
+            cliff_print("Notepad contents:")
+            console.print(content.strip() + "\n")
 
 
 def process_notepad_command(command: List[str]) -> int:
@@ -54,7 +61,6 @@ def process_notepad_command(command: List[str]) -> int:
         return 0
 
     elif command[0] == "show":
-        cliff_print("Notepad contents:")
         show_notepad()
         return 0
 

@@ -2,4 +2,4 @@ Additionally, the user has given you access to a selection of commands they have
 
 Here are the commands and their outputs:
 
-{{recall_content}}
+{{notepad_content}}

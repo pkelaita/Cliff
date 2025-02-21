@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import patch, mock_open
 
-from cliff.cliff import main, MAN_PAGE, CWD
+from cliff.cliff import main, MAN_PAGE
 
 
 # -- Tests for Basic Operations -- #
@@ -101,111 +101,111 @@ def test_main_memory_command(
     mock_process_memory.assert_called_once()
 
 
-# -- Tests for Recall Functionality -- #
+# -- Tests for Notepad Functionality -- #
 
 
+@patch("cliff.cliff.process_notepad_command", return_value=0)
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
-@patch("cliff.cliff.subprocess.run")
 @patch("cliff.cliff.LoadingAnimation")
-def test_main_store_recall(
+def test_main_show_notepad(
     mock_loading,
-    mock_subprocess,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_process_notepad,
     monkeypatch,
-    tmp_path,
 ):
     """
-    main() with recall flag should store command output.
+    main() with notepad command should invoke process_notepad_command.
     """
-    mock_subprocess.return_value.stdout = "command output"
-    mock_subprocess.return_value.stderr = ""
-    recall_file = tmp_path / "recall"
-    monkeypatch.setattr("cliff.cliff.RECALL_FILE", str(recall_file))
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-r", "ls -l"])
-
+    monkeypatch.setattr("sys.argv", ["cliff.py", "--notepad", "show"])
     main()
-
-    mock_subprocess.assert_called_once_with(
-        "ls -l", shell=True, capture_output=True, text=True
-    )
-
-    assert recall_file.read_text().strip() == f"{CWD} $ ls -l\ncommand output"
+    mock_process_notepad.assert_called_once()
 
 
+@patch("cliff.cliff.process_notepad_command", return_value=0)
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.LoadingAnimation")
-def test_main_show_recall_empty(
+def test_main_run_notepad(
     mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_process_notepad,
     monkeypatch,
-    capsys,
 ):
     """
-    main() with show-recall flag should handle empty recall file.
+    main() with notepad command should invoke process_notepad_command.
     """
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-sr"])
-    with patch("builtins.open", mock_open(read_data="")):
-        main()
-    captured = capsys.readouterr()
-    assert "No recalled commands" in captured.out
+    monkeypatch.setattr("sys.argv", ["cliff.py", "--notepad", "run", "ls -l"])
+    main()
+    mock_process_notepad.assert_called_once()
 
 
+@patch("cliff.cliff.process_notepad_command", return_value=0)
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.LoadingAnimation")
-def test_main_show_recall_with_content(
+def test_main_clear_notepad(
     mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_process_notepad,
     monkeypatch,
-    capsys,
 ):
     """
-    main() with show-recall flag should display recall content.
+    main() with notepad command should invoke process_notepad_command.
     """
-    recall_content = "some/path $ ls\nfile1 file2\n"
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-sr"])
-    with patch("builtins.open", mock_open(read_data=recall_content)):
-        main()
-    captured = capsys.readouterr()
-    assert recall_content in captured.out
-
-
-@patch("cliff.cliff.load_config")
-@patch("cliff.cliff.apply_config")
-@patch("cliff.cliff.load_memory")
-@patch("cliff.cliff.LoadingAnimation")
-def test_main_clear_recall(
-    mock_loading,
-    mock_load_mem,
-    mock_apply_config,
-    mock_load_config,
-    monkeypatch,
-    capsys,
-):
-    """
-    main() with clear-recall flag should clear recall file.
-    """
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-cr"])
-    mock_file = mock_open()
-    with patch("builtins.open", mock_file):
-        main()
-    mock_file().write.assert_called_once_with("")
-    captured = capsys.readouterr()
-    assert "Cleared recalled commands" in captured.out
+    monkeypatch.setattr("sys.argv", ["cliff.py", "--notepad", "clear"])
+    main()
+    mock_process_notepad.assert_called_once()
 
 
 # -- Tests for Command Generation -- #
+
+
+@patch("cliff.cliff.load_config")
+@patch("cliff.cliff.apply_config")
+@patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
+@patch("l2m2.client.LLMClient.call")
+@patch("l2m2.client.LLMClient.get_active_models")
+def test_main_no_default_model(
+    mock_get_active_models,
+    mock_llm_call,
+    mock_loading,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    monkeypatch,
+    capsys,
+):
+    """
+    main() should display help message and exit when no default model is set
+    and no model is specified via command line.
+    """
+    mock_load_config.return_value = {
+        "default_model": None,
+        "provider_credentials": {"test": "key"},
+    }
+    mock_get_active_models.return_value = ["test-model"]
+
+    monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
+
+    with pytest.raises(SystemExit) as e:
+        main()
+
+    captured = capsys.readouterr()
+    assert "You can set a default model" in captured.out
+    assert "cliff --config default-model" in captured.out
+    assert "cliff --model [model]" in captured.out
+    assert e.value.code == 0
 
 
 @patch("cliff.cliff.load_config")
