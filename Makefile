@@ -6,9 +6,9 @@ VERSION := $(shell python -c "from cliff import __version__; print(__version__)"
 default: lint typecheck test
 
 init:
-	pip install --upgrade pip
-	pip install -r requirements.txt
-	pip install -r requirements-dev.txt
+	uv pip install --upgrade pip
+	uv pip install -r requirements.txt
+	uv pip install -r requirements-dev.txt
 
 test:
 	pytest -v --cov=cliff --cov-report=term-missing --failed-first --durations=0
@@ -17,8 +17,8 @@ tox:
 	tox -p auto
 
 clear-deps:
-	pip uninstall -y cliff > /dev/null 2>&1
-	pip freeze | xargs pip uninstall -y > /dev/null
+	uv pip uninstall -y cliff > /dev/null 2>&1
+	uv pip freeze | xargs uv pip uninstall -y > /dev/null
 
 coverage:
 	pytest --cov=cliff --cov-report=html
@@ -34,8 +34,8 @@ build:
 	python -m build
 
 update-build: build
-	pip uninstall -y cliff-cli
-	pip install .
+	uv pip uninstall -y cliff-cli
+	uv pip install .
 
 clean:
 	@rm -rf build \
