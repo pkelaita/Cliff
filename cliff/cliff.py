@@ -7,34 +7,19 @@ from l2m2.client import LLMClient
 from l2m2.memory import ChatMemory
 from l2m2.tools import PromptLoader
 
+from cliff import __version__
+from cliff.config import (
+    apply_config,
+    load_config,
+    process_config_command,
+    get_memory_window,
+)
+from cliff.memory import process_memory_command, load_memory, update_memory
+from cliff.console import LoadingAnimation, cliff_print
+
 HOME_DIR = os.path.expanduser("~")
 if not os.path.exists(os.path.join(HOME_DIR, ".cliff")):
     os.makedirs(os.path.join(HOME_DIR, ".cliff"))  # pragma: no cover
-
-if __name__ == "__main__":
-    from __init__ import __version__  # pragma: no cover
-    from config import (  # pragma: no cover
-        apply_config,
-        load_config,
-        process_config_command,
-        get_memory_window,
-    )
-    from memory import (
-        process_memory_command,
-        load_memory,
-        update_memory,
-    )  # pragma: no cover
-    from animations import LoadingAnimation  # pragma: no cover
-else:
-    from cliff import __version__
-    from cliff.config import (
-        apply_config,
-        load_config,
-        process_config_command,
-        get_memory_window,
-    )
-    from cliff.memory import process_memory_command, load_memory, update_memory
-    from cliff.animations import LoadingAnimation
 
 RECALL_FILE = os.path.join(HOME_DIR, ".cliff", "cliff_recall")
 DIR = os.path.dirname(os.path.abspath(__file__))
@@ -77,7 +62,7 @@ def main() -> None:
             model_arg = args.pop(0)
 
     if model_arg is None and ("-m" in flags or "--model" in flags):
-        print("[Cliff] Usage: cliff --model [model] [objective]")
+        cliff_print("Usage: cliff --model [model] [objective]")
         sys.exit(1)
 
     content = " ".join(args)
@@ -125,19 +110,19 @@ def main() -> None:
             s = f"{CWD} $ {content}\n{output}\n"
             f.write(s)
 
-        print("[Cliff] Recalled this command and its output")
+        cliff_print("Recalled this command and its output")
 
     elif show_recall:
         if recall_content == "":
-            print("[Cliff] No recalled commands.")
+            cliff_print("No recalled commands.")
         else:
-            print("[Cliff] Recalled commands:")
+            cliff_print("Recalled commands:")
             print(recall_content)
 
     elif clear_recall:
         with open(RECALL_FILE, "w") as f:
             f.write("")
-        print("[Cliff] Cleared recalled commands.")
+        cliff_print("Cleared recalled commands.")
 
     # Run standard generation
     else:
@@ -189,7 +174,7 @@ cliff --model [model] [objective]
         if model_arg is not None:
             model = model_arg
         else:
-            model = config["default_model"]
+            model = str(config["default_model"])
 
         with LoadingAnimation():
             result = llm.call(
@@ -225,5 +210,5 @@ if that still doesn't work, try switching to a different model."""
 
 
 if __name__ == "__main__":  # pragma: no cover
-    print("[Cliff] dev mode")
+    cliff_print("dev mode")
     main()

@@ -3,12 +3,14 @@ import time
 import sys
 import threading
 
-frames: List[str] = ["⠋ ", "⠙ ", "⠹ ", "⠸ ", "⠼ ", "⠴ ", "⠦ ", "⠧ ", "⠇ ", "⠏ "]
+from rich.console import Console
+
+loading_frames: List[str] = ["⠋ ", "⠙ ", "⠹ ", "⠸ ", "⠼ ", "⠴ ", "⠦ ", "⠧ ", "⠇ ", "⠏ "]
 
 
 def _animate(stop_event: threading.Event, delay: float = 0.05) -> None:
     while not stop_event.is_set():
-        for frame in frames:
+        for frame in loading_frames:
             if stop_event.is_set():
                 break
             sys.stdout.write("\r" + frame)
@@ -49,3 +51,8 @@ class LoadingAnimation:
         self.stop_event.set()
         if self.thread:
             self.thread.join()
+
+
+def cliff_print(message: str) -> None:
+    console = Console()
+    console.print(f"[cyan][Cliff][/cyan] {message}", highlight=False)

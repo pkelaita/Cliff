@@ -7,6 +7,8 @@ from rich import box
 
 from l2m2.client import LLMClient
 
+from cliff.console import cliff_print
+
 HOME_DIR = os.path.expanduser("~")
 CONFIG_FILE = os.path.join(HOME_DIR, ".cliff", "config.json")
 
@@ -190,7 +192,7 @@ def update_memory_window(window: int) -> int:
 
 def reset_config() -> int:
     save_config(DEFAULT_CONFIG)
-    print("[Cliff] Reset config to defaults")
+    cliff_print("Reset config to defaults")
     return 0
 
 
@@ -219,19 +221,20 @@ def show_config() -> int:
             for k, v in creds.items()
         )
     else:
-        cred_list = "[italic red]No providers configured[/]"
+        cred_list = "[italic red]No providers added[/]"
     table.add_row("Provider Credentials", cred_list)
 
     prefs = config["preferred_providers"]
     if prefs:
         pref_list = "\n".join(
-            f"[yellow]{k}[/] → [blue]{v}[/]" for k, v in prefs.items()
+            f"[magenta]{model}[/] → [green]{provider}[/]"
+            for model, provider in prefs.items()
         )
         table.add_row("Preferred Providers", pref_list)
 
     models = config["ollama_models"]
     if models:
-        model_list = "\n".join(f"[magenta]• {model}[/]" for model in models)
+        model_list = "\n".join(f"• [magenta]{model}[/]" for model in models)
         table.add_row("Ollama Models", model_list)
 
     console.print(table)
@@ -246,7 +249,7 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
 
     elif command[0] == "add":
         if len(command) != 3:
-            print("[Cliff] Usage: add [provider] [api-key] or add ollama [model]")
+            cliff_print("Usage: add [provider] [api-key] or add ollama [model]")
             return 1
         if command[1] == "ollama":
             return add_ollama(command[2])
@@ -255,11 +258,11 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
 
     elif command[0] == "remove":
         if len(command) < 2:
-            print("[Cliff] Usage: remove [provider] or remove ollama [model]")
+            cliff_print("Usage: remove [provider] or remove ollama [model]")
             return 1
         if command[1] == "ollama":
             if len(command) != 3:
-                print("[Cliff] Usage: remove ollama [model]")
+                cliff_print("Usage: remove ollama [model]")
                 return 1
             return remove_ollama(command[2])
         else:
@@ -267,13 +270,13 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
 
     elif command[0] == "default-model":
         if len(command) != 2:
-            print("[Cliff] Usage: default-model [model]")
+            cliff_print("Usage: default-model [model]")
             return 1
         return set_default_model(command[1], llm)
 
     elif command[0] == "prefer":
         if len(command) != 3:
-            print("[Cliff] Usage: prefer [model] [provider] or prefer remove [model]")
+            cliff_print("Usage: prefer [model] [provider] or prefer remove [model]")
             return 1
         if command[1] == "remove":
             return prefer_remove(command[2])
@@ -282,7 +285,7 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
 
     elif command[0] == "memory-window":
         if len(command) != 2:
-            print("[Cliff] Usage: memory-window [window-size]")
+            cliff_print("Usage: memory-window [window-size]")
             return 1
         return update_memory_window(int(command[1]))
 
