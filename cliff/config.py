@@ -1,6 +1,9 @@
 from typing import Dict, Optional, List, TypedDict
 import os
 import json
+from rich.console import Console
+from rich.table import Table
+from rich import box
 
 from l2m2.client import LLMClient
 
@@ -23,7 +26,7 @@ HOSTED_PROVIDERS = {
 
 DEFAULT_MODEL_MAPPING = {
     "groq": "llama-3.2-1b",
-    "cohere": "command-r",
+    "cohere": "command-r7b",
     "mistral": "mistral-small",
     "replicate": "llama-3-8b",
     "openai": "gpt-4o-mini",
@@ -193,7 +196,45 @@ def reset_config() -> int:
 
 def show_config() -> int:
     config = load_config()
-    print(json.dumps(config, indent=4))
+    console = Console()
+
+    table = Table(box=box.ROUNDED, show_header=False, show_lines=True)
+    table.add_column("Key", style="cyan")
+    table.add_column("Value")
+
+    table.add_row(
+        "Default Model",
+        (
+            f"[magenta]{str(config['default_model'])}[/]"
+            if config["default_model"]
+            else "[italic red]Not set[/]"
+        ),
+    )
+    table.add_row("Memory Window", str(config["memory_window"]))
+
+    creds = config["provider_credentials"]
+    if creds:
+        cred_list = "\n".join(
+            f"[green]{k}[/]: [dim]{v[0]}{"..." if len(v) < 8 else v[1:4] + "..." + v[-4:]}[/]"
+            for k, v in creds.items()
+        )
+    else:
+        cred_list = "[italic red]No providers configured[/]"
+    table.add_row("Provider Credentials", cred_list)
+
+    prefs = config["preferred_providers"]
+    if prefs:
+        pref_list = "\n".join(
+            f"[yellow]{k}[/] → [blue]{v}[/]" for k, v in prefs.items()
+        )
+        table.add_row("Preferred Providers", pref_list)
+
+    models = config["ollama_models"]
+    if models:
+        model_list = "\n".join(f"[magenta]• {model}[/]" for model in models)
+        table.add_row("Ollama Models", model_list)
+
+    console.print(table)
     return 0
 
 
