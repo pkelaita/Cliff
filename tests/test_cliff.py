@@ -365,7 +365,10 @@ def test_main_specific_model(
     """
     main() with model flag should use specified model.
     """
-    mock_load_config.return_value = {"provider_credentials": {"test": "key"}}
+    mock_load_config.return_value = {
+        "provider_credentials": {"test": "key"},
+        "default_model": "some-model",
+    }
     mock_get_active_models.return_value = ["specific-model"]
     mock_llm_call.return_value = '{"command": "ls -l"}'
 

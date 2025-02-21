@@ -23,6 +23,27 @@ from cliff.config import (
     reset_config,
 )
 
+TEST_BASE_CONFIG = {
+    "provider_credentials": {},
+    "default_model": None,
+    "preferred_providers": {},
+    "ollama_models": [],
+    "memory_window": 10,
+}
+
+TEST_CONFIG_WITH_OPENAI = {
+    **TEST_BASE_CONFIG,
+    "provider_credentials": {"openai": "secret"},
+    "default_model": "gpt-4o",
+}
+
+TEST_CONFIG_WITH_MULTIPLE_PROVIDERS = {
+    **TEST_BASE_CONFIG,
+    "provider_credentials": {"openai": "secret_key", "anthropic": "another_key"},
+    "preferred_providers": {"gpt-4o": "openai"},
+    "ollama_models": ["llama2", "mistral"],
+}
+
 
 # -- Tests for Config File Operations -- #
 
@@ -49,7 +70,7 @@ def test_load_config_file_not_exist(
 @patch(
     "builtins.open",
     new_callable=mock_open,
-    read_data='{"provider_credentials": {"openai": "secret"}, "default_model": "gpt-4o"}',
+    read_data=json.dumps(TEST_CONFIG_WITH_OPENAI),
 )
 @patch("json.load", side_effect=lambda f: json.loads(f.read()))
 def test_load_config_file_exists(mock_json_load, mock_file, mock_path_exists):
@@ -68,12 +89,7 @@ def test_save_config(mock_json_dump, mock_file):
     """
     save_config() should dump the given config to the config file.
     """
-    test_config = {
-        "provider_credentials": {"openai": "secret"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {},
-        "ollama_models": [],
-    }
+    test_config = TEST_CONFIG_WITH_OPENAI
     save_config(test_config)
     mock_file.assert_called_once_with(CONFIG_FILE, "w")
     mock_json_dump.assert_called_once_with(test_config, mock_file(), indent=4)
@@ -88,12 +104,7 @@ def test_apply_config(mock_llm_client):
     apply_config() should call llm.add_provider for each provider credential in the config.
     """
     mock_llm = mock_llm_client.return_value
-    test_config = {
-        "provider_credentials": {"openai": "secret_key", "anthropic": "another_key"},
-        "default_model": None,
-        "preferred_providers": {},
-        "ollama_models": [],
-    }
+    test_config = TEST_CONFIG_WITH_MULTIPLE_PROVIDERS
     apply_config(test_config, mock_llm)
     mock_llm.add_provider.assert_any_call("openai", "secret_key")
     mock_llm.add_provider.assert_any_call("anthropic", "another_key")
@@ -107,12 +118,7 @@ def test_add_provider_valid_new(mock_save_config, mock_load_config):
     should set that provider's API key, possibly set default_model,
     save config, and return 0.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {},
-        "default_model": None,
-        "preferred_providers": {},
-        "ollama_models": [],
-    }
+    mock_load_config.return_value = TEST_BASE_CONFIG
     result = add_provider("openai", "test_key")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -125,12 +131,7 @@ def test_add_provider_valid_update(mock_save_config, mock_load_config):
     add_provider() with a valid provider that already exists
     should update its API key, save config, and return 0.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {"openai": "old_key"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {},
-        "ollama_models": [],
-    }
+    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
     result = add_provider("openai", "new_key")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -146,12 +147,7 @@ def test_add_provider_invalid():
 
 @patch(
     "cliff.config.load_config",
-    return_value={
-        "provider_credentials": {"openai": "secret_key"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {},
-        "ollama_models": [],
-    },
+    return_value=TEST_CONFIG_WITH_OPENAI,
 )
 @patch("cliff.config.save_config")
 def test_remove_provider_existing(mock_save_config, mock_load_config):
@@ -165,12 +161,7 @@ def test_remove_provider_existing(mock_save_config, mock_load_config):
 
 @patch(
     "cliff.config.load_config",
-    return_value={
-        "provider_credentials": {"openai": "secret_key"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {},
-        "ollama_models": [],
-    },
+    return_value=TEST_CONFIG_WITH_OPENAI,
 )
 @patch("cliff.config.save_config")
 def test_remove_provider_nonexistent(mock_save_config, mock_load_config):
@@ -192,12 +183,7 @@ def test_remove_provider_nonexistent(mock_save_config, mock_load_config):
 @patch("l2m2.client.LLMClient.get_active_models", return_value=["gpt-4o"])
 @patch(
     "cliff.config.load_config",
-    return_value={
-        "provider_credentials": {"openai": "test_key"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {},
-        "ollama_models": [],
-    },
+    return_value=TEST_CONFIG_WITH_OPENAI,
 )
 @patch("cliff.config.save_config")
 def test_set_default_model_success(
@@ -246,12 +232,7 @@ def test_prefer_add_success(mock_save_config, mock_load_config):
     """
     prefer_add() should add a preferred provider for a model and return 0.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {"openai": "test_key"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {},
-        "ollama_models": [],
-    }
+    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
     result = prefer_add("gpt-4o", "openai")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -263,12 +244,7 @@ def test_prefer_remove_success(mock_save_config, mock_load_config):
     """
     prefer_remove() should remove a preferred provider for a model and return 0.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {"openai": "test_key"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {"gpt-4o": "openai"},
-        "ollama_models": [],
-    }
+    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
     result = prefer_remove("gpt-4o")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -280,12 +256,7 @@ def test_prefer_remove_nonexistent(mock_save_config, mock_load_config):
     """
     prefer_remove() should return 1 if the model has no preferred provider.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {"openai": "test_key"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {},
-        "ollama_models": [],
-    }
+    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
     result = prefer_remove("gpt-4o")
     mock_save_config.assert_not_called()
     assert result == 1
@@ -296,12 +267,7 @@ def test_prefer_remove_nonexistent(mock_save_config, mock_load_config):
 
 @patch(
     "cliff.config.load_config",
-    return_value={
-        "provider_credentials": {},
-        "default_model": None,
-        "preferred_providers": {},
-        "ollama_models": [],
-    },
+    return_value=TEST_BASE_CONFIG,
 )
 def test_show_config(mock_load_config, capsys):
     """
@@ -310,7 +276,7 @@ def test_show_config(mock_load_config, capsys):
     result = show_config()
     captured = capsys.readouterr()
     assert result == 0
-    assert "provider_credentials" in captured.out
+    assert "Provider Credentials" in captured.out
 
 
 # -- Tests for Ollama Model Management -- #
@@ -322,12 +288,7 @@ def test_add_ollama_success(mock_save_config, mock_load_config):
     """
     add_ollama() should add a model to ollama_models and return 0.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {},
-        "default_model": None,
-        "preferred_providers": {},
-        "ollama_models": [],
-    }
+    mock_load_config.return_value = TEST_BASE_CONFIG
     result = add_ollama("llama2")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -339,12 +300,7 @@ def test_remove_ollama_success(mock_save_config, mock_load_config):
     """
     remove_ollama() should remove a model from ollama_models and return 0.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {},
-        "default_model": None,
-        "preferred_providers": {},
-        "ollama_models": ["llama2"],
-    }
+    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
     result = remove_ollama("llama2")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -356,12 +312,7 @@ def test_remove_ollama_nonexistent(mock_save_config, mock_load_config):
     """
     remove_ollama() should return 1 if the model is not in ollama_models.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {},
-        "default_model": None,
-        "preferred_providers": {},
-        "ollama_models": [],
-    }
+    mock_load_config.return_value = TEST_BASE_CONFIG
     result = remove_ollama("nonexistent-model")
     mock_save_config.assert_not_called()
     assert result == 1
@@ -576,13 +527,7 @@ def test_update_memory_window_success(mock_save_config, mock_load_config):
     """
     update_memory_window() should update the memory window size and return 0.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {},
-        "default_model": None,
-        "preferred_providers": {},
-        "ollama_models": [],
-        "memory_window": 10,
-    }
+    mock_load_config.return_value = TEST_BASE_CONFIG
     result = update_memory_window(15)
     mock_save_config.assert_called_once()
     assert result == 0
