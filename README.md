@@ -80,7 +80,7 @@ If needed (i.e., to avoid escaping special characters), you can use quotes.
 cliff "kill the process that's running on port 8080"
 ```
 
-If you want to specify which model to use, you can do so with the `--model` flag.
+If you want to specify which model to use, you can do so with the `--model` or `-m` flag.
 
 ```
 cliff --model gpt-4o kill the process running on port 8080
@@ -98,15 +98,15 @@ If you'd like to change the window size, run `cliff --config memory-window [new 
 
 ---
 
-#### Storing Command Outputs
+#### Command Notepad
 
-Cliff's chat memory does not have access to command outputs, but you can optionally share them with Cliff to help it debug and improve its responses.
+Cliff's chat memory does not have access to command outputs, but you can optionally share them with Cliff to help it debug and improve its responses via its command notepad.
 
-- To run a command and store its output for Cliff, run `cliff -r [command]` or `cliff --recall [command]`.
-- To view all recalled commands and their outputs, run `cliff --show-recall` or `cliff -sr`.
-- To clear Cliff's recall storage, run `cliff --clear-recall` or `cliff -cr`.
+- To run a command and store its output for Cliff, run `cliff --notepad run [command]`.
+- To view your command notepad, run `cliff --notepad show`, and to clear it, run `cliff --notepad clear`.
+- `-n` can be used as an alias for `--notepad`.
 
-_Tip:_ You'll usually have to put quotes around your command if it contains special characters – e.g., `cliff -r "ps ax | head -n 10"` – for Cliff to properly capture and execute it.
+_Tip:_ You'll usually have to put quotes around your command if it contains special characters – e.g., `cliff --notepad run "ps ax | head -n 10"` – for Cliff to properly capture and execute it.
 
 ---
 

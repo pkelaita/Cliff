@@ -17,19 +17,16 @@ Options
         Display the version of Cliff.
 
     -m, --model [model] [objective]
-        Specify the model to use to generate the command
+        Specify the model to use to generate the command.
 
-    -r, --recall [command]
-        Store the provided command and its output for future reference.
-
-    -sr, --show-recall
-        Display all previously stored commands and their outputs.
-
-    -cr, --clear-recall
-        Clear all stored commands and their outputs.
-
-    --memory [show or clear]
+    --memory [show|clear]
         Show or clear Cliff's chat memory.
+
+    -n, --notepad run [command]
+        Run a command and log its output to Cliff's command notepad.
+
+    -n, --notepad [show|clear]
+        Show or clear Cliff's command notepad.
 
     --config [options]
         Configure Cliff. See `cliff --config help` for more information.
