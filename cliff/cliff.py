@@ -99,7 +99,7 @@ def main() -> None:
         process_memory_command(args, WINDOW_SIZE)
 
     elif view_version:
-        print(f"[Cliff] Version {__version__}")
+        cliff_print(f"Version {__version__}")
 
     elif store_recall:
         cmd_result = subprocess.run(content, shell=True, capture_output=True, text=True)
@@ -127,8 +127,8 @@ def main() -> None:
     # Run standard generation
     else:
         if len(llm.get_active_models()) == 0:
-            print(
-                """[Cliff] Welcome to Cliff! To get started, please either connect to an LLM provider by typing
+            cliff_print(
+                """Welcome to Cliff! To get started, please either connect to an LLM provider by typing
                 
 cliff --config add [provider] [api-key]
                 
@@ -140,8 +140,8 @@ cliff --config add ollama [model]
             sys.exit(0)
 
         if config["default_model"] is None and model_arg is None:
-            print(
-                """[Cliff] It looks like you haven't yet set a default model. You can set a default model by typing
+            cliff_print(
+                """It looks like you haven't yet set a default model. You can set a default model by typing
                 
 cliff --config default-model [model]
 
@@ -202,8 +202,8 @@ cliff --model [model] [objective]
             subprocess.run(["pbcopy"], input=command, text=True)
             update_memory(mem, WINDOW_SIZE)
         else:
-            print(
-                """[Cliff] Sorry, the LLM returned a bad or malformed response. If this
+            cliff_print(
+                """Sorry, the LLM returned a bad or malformed response. If this
 persists, try clearing Cliff's memory with cliff --memory clear, and
 if that still doesn't work, try switching to a different model."""
             )

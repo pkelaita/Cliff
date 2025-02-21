@@ -90,7 +90,7 @@ def save_config(config: Config) -> None:
 
 def add_provider(provider: str, api_key: str) -> int:
     if provider not in HOSTED_PROVIDERS:
-        print(f"[Cliff] Invalid provider: {provider}")
+        cliff_print(f"Invalid provider: {provider}")
         return 1
 
     config = load_config()
@@ -104,10 +104,10 @@ def add_provider(provider: str, api_key: str) -> int:
     save_config(config)
 
     if exists:
-        print(f"[Cliff] Updated provider {provider}")
+        cliff_print(f"Updated provider {provider}")
         return 0
     else:
-        print(f"[Cliff] Added provider {provider}")
+        cliff_print(f"Added provider {provider}")
         return 0
 
 
@@ -117,18 +117,18 @@ def add_ollama(model: str) -> int:
     if config["default_model"] is None:
         config["default_model"] = model
     save_config(config)
-    print(f"[Cliff] Added local model {model}")
+    cliff_print(f"Added local model {model}")
     return 0
 
 
 def remove_ollama(model: str) -> int:
     config = load_config()
     if model not in config["ollama_models"]:
-        print(f"[Cliff] local model {model} not found")
+        cliff_print(f"local model {model} not found")
         return 1
     config["ollama_models"].remove(model)
     save_config(config)
-    print(f"[Cliff] Removed local model {model}")
+    cliff_print(f"Removed local model {model}")
     return 0
 
 
@@ -139,27 +139,27 @@ def remove_provider(provider: str) -> int:
     exists = config["provider_credentials"].get(provider)
 
     if not exists:
-        print(f"[Cliff] Provider {provider} not found")
+        cliff_print(f"Provider {provider} not found")
         return 1
 
     del config["provider_credentials"][provider]
     save_config(config)
 
-    print(f"[Cliff] Removed provider {provider}")
+    cliff_print(f"Removed provider {provider}")
     return 0
 
 
 def set_default_model(model: str, llm: LLMClient) -> int:
     active_models = llm.get_active_models()
     if model not in active_models:
-        print(f"[Cliff] Model {model} not found")
+        cliff_print(f"Model {model} not found")
         return 1
 
     config = load_config()
     config["default_model"] = model
     save_config(config)
 
-    print(f"[Cliff] Set default model to {model}")
+    cliff_print(f"Set default model to {model}")
     return 0
 
 
@@ -167,18 +167,18 @@ def prefer_add(model: str, provider: str) -> int:
     config = load_config()
     config["preferred_providers"][model] = provider
     save_config(config)
-    print(f"[Cliff] Added preferred provider {provider} for {model}")
+    cliff_print(f"Added preferred provider {provider} for {model}")
     return 0
 
 
 def prefer_remove(model: str) -> int:
     config = load_config()
     if model not in config["preferred_providers"]:
-        print(f"[Cliff] Preferred provider for {model} not found")
+        cliff_print(f"Preferred provider for {model} not found")
         return 1
     del config["preferred_providers"][model]
     save_config(config)
-    print(f"[Cliff] Removed preferred provider for {model}")
+    cliff_print(f"Removed preferred provider for {model}")
     return 0
 
 
@@ -186,7 +186,7 @@ def update_memory_window(window: int) -> int:
     config = load_config()
     config["memory_window"] = window
     save_config(config)
-    print(f"[Cliff] Updated memory window size to {window}")
+    cliff_print(f"Updated memory window size to {window}")
     return 0
 
 
@@ -200,7 +200,11 @@ def show_config() -> int:
     config = load_config()
     console = Console()
 
-    table = Table(box=box.ROUNDED, show_header=False, show_lines=True)
+    table = Table(
+        box=box.ROUNDED,
+        show_header=False,
+        show_lines=True,
+    )
     table.add_column("Key", style="cyan")
     table.add_column("Value")
 
@@ -212,7 +216,10 @@ def show_config() -> int:
             else "[italic red]Not set[/]"
         ),
     )
-    table.add_row("Memory Window", str(config["memory_window"]))
+    table.add_row(
+        "Memory Window",
+        f"{str(config['memory_window'])} Turns",
+    )
 
     creds = config["provider_credentials"]
     if creds:
@@ -238,6 +245,10 @@ def show_config() -> int:
         table.add_row("Ollama Models", model_list)
 
     console.print(table)
+    print()
+    print(
+        "For more information on the Cliff configuration system, run cliff --config help."
+    )
     return 0
 
 
@@ -296,7 +307,7 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
         return show_config()
 
     else:
-        print(
-            f"[Cliff] Unrecognized config command: {command[0]}. For usage, run cliff --config help"
+        cliff_print(
+            f"Unrecognized config command: {command[0]}. For usage, run cliff --config help"
         )
         return 1
