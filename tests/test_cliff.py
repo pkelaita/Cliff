@@ -9,6 +9,13 @@ from cliff.cliff import main, MAN_PAGE
 # -- Tests for Basic Operations -- #
 
 
+@pytest.fixture
+def mock_pbcopy():
+    """Mock the pbcopy subprocess call"""
+    with patch("cliff.cliff.subprocess.run") as mock:
+        yield mock
+
+
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
@@ -20,6 +27,7 @@ def test_main_no_args(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -43,6 +51,7 @@ def test_main_version_flag(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
     capsys,
 ):
@@ -69,6 +78,7 @@ def test_main_config_command(
     mock_apply_config,
     mock_load_config,
     mock_process_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -93,6 +103,7 @@ def test_main_memory_command(
     mock_apply_config,
     mock_load_config,
     mock_process_memory,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -117,6 +128,7 @@ def test_main_show_notepad(
     mock_apply_config,
     mock_load_config,
     mock_process_notepad,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -138,6 +150,7 @@ def test_main_run_notepad(
     mock_apply_config,
     mock_load_config,
     mock_process_notepad,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -159,6 +172,7 @@ def test_main_clear_notepad(
     mock_apply_config,
     mock_load_config,
     mock_process_notepad,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -177,6 +191,7 @@ def test_main_clear_notepad(
 def test_main_clear_command(
     mock_clear_memory,
     mock_clear_notepad,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -206,6 +221,7 @@ def test_main_no_default_model(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -236,7 +252,6 @@ def test_main_no_default_model(
 @patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
-@patch("cliff.cliff.subprocess.run")
 @patch("l2m2.client.LLMClient.get_active_models")
 @patch("cliff.cliff.LoadingAnimation")
 @patch("builtins.open", new_callable=mock_open, read_data="man page content")
@@ -244,12 +259,12 @@ def test_main_generate_command(
     mock_file,
     mock_loading,
     mock_get_active_models,
-    mock_subprocess,
     mock_llm_call,
     mock_update_mem,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -263,13 +278,10 @@ def test_main_generate_command(
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = '{"command": "ls -l"}'
-    mock_subprocess.return_value.stdout = "file1 file2"
 
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
-
-    with patch("cliff.cliff.subprocess.run") as mock_pbcopy:
-        main()
-        mock_pbcopy.assert_any_call(["pbcopy"], input="ls -l", text=True)
+    main()
+    mock_pbcopy.assert_called_once_with(["pbcopy"], input="ls -l", text=True)
 
 
 @patch("cliff.cliff.load_config")
@@ -287,6 +299,7 @@ def test_main_no_active_models(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -324,6 +337,7 @@ def test_main_invalid_json_response(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -361,6 +375,7 @@ def test_main_bad_llm_response(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -399,6 +414,7 @@ def test_main_specific_model(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -422,7 +438,7 @@ def test_main_specific_model(
     assert mock_llm_call.call_args[1]["model"] == "specific-model"
 
 
-def test_main_model_flag_without_model(monkeypatch):
+def test_main_model_flag_without_model(mock_pbcopy, monkeypatch):
     """
     main() with model flag but no model specified should exit with error.
     """
@@ -449,6 +465,7 @@ def test_main_llm_timeout(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
     capsys,
 ):
