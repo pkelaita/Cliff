@@ -23,26 +23,35 @@ from cliff.config import (
     reset_config,
 )
 
-TEST_BASE_CONFIG = {
-    "provider_credentials": {},
-    "default_model": None,
-    "preferred_providers": {},
-    "ollama_models": [],
-    "memory_window": 10,
-}
 
-TEST_CONFIG_WITH_OPENAI = {
-    **TEST_BASE_CONFIG,
-    "provider_credentials": {"openai": "secret"},
-    "default_model": "gpt-4o",
-}
+def get_test_base_config():
+    """Returns a fresh copy of the base test configuration"""
+    return {
+        "provider_credentials": {},
+        "default_model": None,
+        "preferred_providers": {},
+        "ollama_models": [],
+        "memory_window": 10,
+    }
 
-TEST_CONFIG_WITH_MULTIPLE_PROVIDERS = {
-    **TEST_BASE_CONFIG,
-    "provider_credentials": {"openai": "secret_key", "anthropic": "another_key"},
-    "preferred_providers": {"gpt-4o": "openai"},
-    "ollama_models": ["llama2", "mistral"],
-}
+
+def get_test_config_with_openai():
+    """Returns a fresh copy of the OpenAI test configuration"""
+    return {
+        **get_test_base_config(),
+        "provider_credentials": {"openai": "secret"},
+        "default_model": "gpt-4o",
+    }
+
+
+def get_test_config_with_multiple_providers():
+    """Returns a fresh copy of the multi-provider test configuration"""
+    return {
+        **get_test_base_config(),
+        "provider_credentials": {"openai": "secret_key", "anthropic": "another_key"},
+        "preferred_providers": {"gpt-4o": "openai"},
+        "ollama_models": ["llama2", "mistral"],
+    }
 
 
 # -- Tests for Config File Operations -- #
@@ -70,7 +79,7 @@ def test_load_config_file_not_exist(
 @patch(
     "builtins.open",
     new_callable=mock_open,
-    read_data=json.dumps(TEST_CONFIG_WITH_OPENAI),
+    read_data=json.dumps(get_test_config_with_openai()),
 )
 @patch("json.load", side_effect=lambda f: json.loads(f.read()))
 def test_load_config_file_exists(mock_json_load, mock_file, mock_path_exists):
@@ -89,7 +98,7 @@ def test_save_config(mock_json_dump, mock_file):
     """
     save_config() should dump the given config to the config file.
     """
-    test_config = TEST_CONFIG_WITH_OPENAI
+    test_config = get_test_config_with_openai()
     save_config(test_config)
     mock_file.assert_called_once_with(CONFIG_FILE, "w")
     mock_json_dump.assert_called_once_with(test_config, mock_file(), indent=4)
@@ -104,7 +113,7 @@ def test_apply_config(mock_llm_client):
     apply_config() should call llm.add_provider for each provider credential in the config.
     """
     mock_llm = mock_llm_client.return_value
-    test_config = TEST_CONFIG_WITH_MULTIPLE_PROVIDERS
+    test_config = get_test_config_with_multiple_providers()
     apply_config(test_config, mock_llm)
     mock_llm.add_provider.assert_any_call("openai", "secret_key")
     mock_llm.add_provider.assert_any_call("anthropic", "another_key")
@@ -118,7 +127,7 @@ def test_add_provider_valid_new(mock_save_config, mock_load_config):
     should set that provider's API key, possibly set default_model,
     save config, and return 0.
     """
-    mock_load_config.return_value = TEST_BASE_CONFIG
+    mock_load_config.return_value = get_test_base_config()
     result = add_provider("openai", "test_key")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -131,7 +140,7 @@ def test_add_provider_valid_update(mock_save_config, mock_load_config):
     add_provider() with a valid provider that already exists
     should update its API key, save config, and return 0.
     """
-    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
+    mock_load_config.return_value = get_test_config_with_openai()
     result = add_provider("openai", "new_key")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -147,7 +156,7 @@ def test_add_provider_invalid():
 
 @patch(
     "cliff.config.load_config",
-    return_value=TEST_CONFIG_WITH_OPENAI,
+    return_value=get_test_config_with_openai(),
 )
 @patch("cliff.config.save_config")
 def test_remove_provider_existing(mock_save_config, mock_load_config):
@@ -161,7 +170,7 @@ def test_remove_provider_existing(mock_save_config, mock_load_config):
 
 @patch(
     "cliff.config.load_config",
-    return_value=TEST_CONFIG_WITH_OPENAI,
+    return_value=get_test_config_with_openai(),
 )
 @patch("cliff.config.save_config")
 def test_remove_provider_nonexistent(mock_save_config, mock_load_config):
@@ -183,7 +192,7 @@ def test_remove_provider_nonexistent(mock_save_config, mock_load_config):
 @patch("l2m2.client.LLMClient.get_active_models", return_value=["gpt-4o"])
 @patch(
     "cliff.config.load_config",
-    return_value=TEST_CONFIG_WITH_OPENAI,
+    return_value=get_test_config_with_openai(),
 )
 @patch("cliff.config.save_config")
 def test_set_default_model_success(
@@ -232,7 +241,7 @@ def test_prefer_add_success(mock_save_config, mock_load_config):
     """
     prefer_add() should add a preferred provider for a model and return 0.
     """
-    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
+    mock_load_config.return_value = get_test_config_with_openai()
     result = prefer_add("gpt-4o", "openai")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -244,7 +253,8 @@ def test_prefer_remove_success(mock_save_config, mock_load_config):
     """
     prefer_remove() should remove a preferred provider for a model and return 0.
     """
-    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
+    config = get_test_config_with_multiple_providers()
+    mock_load_config.return_value = config
     result = prefer_remove("gpt-4o")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -256,7 +266,7 @@ def test_prefer_remove_nonexistent(mock_save_config, mock_load_config):
     """
     prefer_remove() should return 1 if the model has no preferred provider.
     """
-    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
+    mock_load_config.return_value = get_test_config_with_openai()
     result = prefer_remove("gpt-4o")
     mock_save_config.assert_not_called()
     assert result == 1
@@ -267,7 +277,7 @@ def test_prefer_remove_nonexistent(mock_save_config, mock_load_config):
 
 @patch(
     "cliff.config.load_config",
-    return_value=TEST_BASE_CONFIG,
+    return_value=get_test_base_config(),
 )
 def test_show_config(mock_load_config, capsys):
     """
@@ -279,6 +289,77 @@ def test_show_config(mock_load_config, capsys):
     assert "Provider Credentials" in captured.out
 
 
+@patch("cliff.config.load_config")
+def test_show_config_empty(mock_load_config, capsys):
+    """
+    show_config() should properly display an empty/default configuration
+    """
+    mock_load_config.return_value = get_test_base_config()
+
+    result = show_config()
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "Not set" in captured.out
+    assert "No providers added" in captured.out
+    assert "10 Turns" in captured.out
+    assert "Ollama Models" not in captured.out
+    assert "Preferred Providers" not in captured.out
+
+
+@patch("cliff.config.load_config")
+def test_show_config_full(mock_load_config, capsys):
+    """
+    show_config() should properly display a configuration with all fields populated
+    """
+    config = {
+        "provider_credentials": {"openai": "123456789", "anthropic": "987654321"},
+        "default_model": "gpt-4o",
+        "preferred_providers": {"gpt-4o": "openai", "claude-3": "anthropic"},
+        "ollama_models": ["llama2", "mistral"],
+        "memory_window": 15,
+    }
+    mock_load_config.return_value = config
+
+    result = show_config()
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "gpt-4o" in captured.out
+    assert "15 Turns" in captured.out
+    assert "openai" in captured.out
+    assert "anthropic" in captured.out
+    assert "llama2" in captured.out
+    assert "mistral" in captured.out
+    assert "1234...6789" in captured.out
+    assert "9876...4321" in captured.out
+
+
+@patch("cliff.config.load_config")
+def test_show_config_partial(mock_load_config, capsys):
+    """
+    show_config() should properly display a configuration with some fields populated
+    """
+    config = {
+        "provider_credentials": {"openai": "123456789"},
+        "default_model": "gpt-4o",
+        "preferred_providers": {},
+        "ollama_models": ["llama2"],
+        "memory_window": 10,
+    }
+    mock_load_config.return_value = config
+
+    result = show_config()
+    captured = capsys.readouterr()
+
+    assert result == 0
+    assert "gpt-4o" in captured.out
+    assert "10 Turns" in captured.out
+    assert "openai" in captured.out
+    assert "llama2" in captured.out
+    assert "Preferred Providers" not in captured.out
+
+
 # -- Tests for Ollama Model Management -- #
 
 
@@ -288,7 +369,7 @@ def test_add_ollama_success(mock_save_config, mock_load_config):
     """
     add_ollama() should add a model to ollama_models and return 0.
     """
-    mock_load_config.return_value = TEST_BASE_CONFIG
+    mock_load_config.return_value = get_test_base_config()
     result = add_ollama("llama2")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -300,7 +381,8 @@ def test_remove_ollama_success(mock_save_config, mock_load_config):
     """
     remove_ollama() should remove a model from ollama_models and return 0.
     """
-    mock_load_config.return_value = TEST_CONFIG_WITH_OPENAI
+    config = get_test_config_with_multiple_providers()
+    mock_load_config.return_value = config
     result = remove_ollama("llama2")
     mock_save_config.assert_called_once()
     assert result == 0
@@ -312,7 +394,7 @@ def test_remove_ollama_nonexistent(mock_save_config, mock_load_config):
     """
     remove_ollama() should return 1 if the model is not in ollama_models.
     """
-    mock_load_config.return_value = TEST_BASE_CONFIG
+    mock_load_config.return_value = get_test_base_config()
     result = remove_ollama("nonexistent-model")
     mock_save_config.assert_not_called()
     assert result == 1
@@ -527,7 +609,7 @@ def test_update_memory_window_success(mock_save_config, mock_load_config):
     """
     update_memory_window() should update the memory window size and return 0.
     """
-    mock_load_config.return_value = TEST_BASE_CONFIG
+    mock_load_config.return_value = get_test_base_config()
     result = update_memory_window(15)
     mock_save_config.assert_called_once()
     assert result == 0

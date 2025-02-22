@@ -222,8 +222,8 @@ def show_config() -> int:
     creds = config["provider_credentials"]
     if creds:
         cred_list = "\n".join(
-            f"[green]{k}[/]: [dim]{v[0]}{"..." if len(v) < 8 else v[1:4] + "..." + v[-4:]}[/]"
-            for k, v in creds.items()
+            f"[green]{provider}[/]: [dim]{api_key[0]}{'...' if len(api_key) < 8 else api_key[1:4] + '...' + api_key[-4:]}[/]"
+            for provider, api_key in creds.items()
         )
     else:
         cred_list = "[italic red]No providers added[/]"
