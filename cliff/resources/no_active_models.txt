@@ -1,0 +1,7 @@
+Welcome to Cliff! To get started, please either connect to an LLM provider by typing
+                
+cliff --config add [provider] [api-key]
+                
+or connect to a local model in Ollama by typing
+                
+cliff --config add ollama [model]

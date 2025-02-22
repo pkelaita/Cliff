@@ -1,0 +1,7 @@
+It looks like you haven't yet set a default model. You can set a default model by typing
+                
+cliff --config default-model [model]
+
+Alternatively, you can call Cliff with a specific model by typing
+
+cliff --model [model] [objective]

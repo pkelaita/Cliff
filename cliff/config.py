@@ -2,12 +2,11 @@ from typing import Dict, Optional, List, TypedDict
 import os
 import json
 
-from rich.console import Console
 from rich.table import Table
 from rich import box
 from l2m2.client import LLMClient
 
-from cliff.console import cliff_print
+from cliff.console import cliff_print, console
 
 HOME_DIR = os.path.expanduser("~")
 CONFIG_FILE = os.path.join(HOME_DIR, ".cliff", "config.json")
@@ -198,7 +197,6 @@ def reset_config() -> int:
 
 def show_config() -> int:
     config = load_config()
-    console = Console()
 
     table = Table(
         box=box.ROUNDED,

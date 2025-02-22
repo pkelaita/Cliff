@@ -24,6 +24,9 @@ if not os.path.exists(os.path.join(HOME_DIR, ".cliff")):
 
 DIR = os.path.dirname(os.path.abspath(__file__))
 MAN_PAGE = os.path.join(DIR, "resources", "man_page.txt")
+NO_ACTIVE_MODELS = os.path.join(DIR, "resources", "no_active_models.txt")
+AMBIGUOUS_MODEL = os.path.join(DIR, "resources", "ambiguous_model.txt")
+MALFORMED_RESPONSE = os.path.join(DIR, "resources", "malformed_response.txt")
 
 POSSIBLE_FLAGS = [
     "-v",
@@ -92,29 +95,13 @@ def main() -> None:
     # Run standard generation
     else:
         if len(llm.get_active_models()) == 0:
-            cliff_print(
-                """Welcome to Cliff! To get started, please either connect to an LLM provider by typing
-                
-cliff --config add [provider] [api-key]
-                
-or connect to a local model in Ollama by typing
-                
-cliff --config add ollama [model]
-"""
-            )
+            with open(NO_ACTIVE_MODELS, "r") as f:
+                cliff_print(f.read())
             sys.exit(0)
 
         if config["default_model"] is None and model_arg is None:
-            cliff_print(
-                """It looks like you haven't yet set a default model. You can set a default model by typing
-                
-cliff --config default-model [model]
-
-Alternatively, you can call Cliff with a specific model by typing
-
-cliff --model [model] [objective]
-"""
-            )
+            with open(AMBIGUOUS_MODEL, "r") as f:
+                cliff_print(f.read())
             sys.exit(0)
 
         pl = PromptLoader(prompts_base_dir=os.path.join(DIR, "prompts"))
@@ -169,11 +156,8 @@ cliff --model [model] [objective]
             subprocess.run(["pbcopy"], input=command, text=True)
             update_memory(mem, WINDOW_SIZE)
         else:
-            cliff_print(
-                """Sorry, the LLM returned a bad or malformed response. If this
-persists, try clearing Cliff's memory with cliff --memory clear, and
-if that still doesn't work, try switching to a different model."""
-            )
+            with open(MALFORMED_RESPONSE, "r") as f:
+                cliff_print(f.read())
 
 
 if __name__ == "__main__":  # pragma: no cover
