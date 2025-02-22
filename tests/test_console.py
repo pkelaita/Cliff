@@ -1,6 +1,7 @@
-from unittest.mock import patch, Mock
+from unittest.mock import patch, Mock, mock_open
+import pytest
 
-from cliff.console import LoadingAnimation, cliff_print
+from cliff.console import LoadingAnimation, cliff_print, resource_print
 
 
 # -- Tests for Loading Animation -- #
@@ -94,4 +95,40 @@ def test_cliff_print(mock_console_print):
 
     mock_console_print.assert_called_once_with(
         "[cyan][Cliff][/cyan]", highlight=False, end=" "
+    )
+
+
+# -- Tests for Resource Printing -- #
+
+
+@pytest.fixture
+def mock_file():
+    """Fixture that mocks a file containing 'test content'"""
+    with patch("builtins.open", mock_open(read_data="test content")) as mock_file:
+        yield mock_file
+
+
+@patch("cliff.console.subprocess.run")
+def test_resource_print(mock_subprocess_run, mock_file):
+    """
+    resource_print() should print the content of a file.
+    """
+    resource_print("test_file.txt")
+
+    mock_file.assert_called_once_with("test_file.txt", "r")
+    mock_subprocess_run.assert_called_once_with(
+        ["less", "-R", "-X", "-J", "-F"], input="test content".encode(), check=True
+    )
+
+
+@patch("cliff.console.subprocess.run")
+def test_resource_print_with_fn(mock_subprocess_run, mock_file):
+    """
+    resource_print() should apply a function to the content if provided.
+    """
+    resource_print("test_file.txt", lambda x: x.upper())
+
+    mock_file.assert_called_once_with("test_file.txt", "r")
+    mock_subprocess_run.assert_called_once_with(
+        ["less", "-R", "-X", "-J", "-F"], input="TEST CONTENT".encode(), check=True
     )

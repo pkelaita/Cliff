@@ -6,7 +6,7 @@ from rich.table import Table
 from rich import box
 from l2m2.client import LLMClient
 
-from cliff.console import cliff_print, console
+from cliff.console import cliff_print, console, resource_print
 
 HOME_DIR = os.path.expanduser("~")
 CONFIG_FILE = os.path.join(HOME_DIR, ".cliff", "config.json")
@@ -56,9 +56,9 @@ DEFAULT_CONFIG: Config = {
 }
 
 
-def get_memory_window() -> int:
-    config = load_config()
-    return config["memory_window"]
+def save_config(config: Config) -> None:
+    with open(CONFIG_FILE, "w") as f:
+        json.dump(config, f, indent=4)
 
 
 def load_config() -> Config:
@@ -87,11 +87,6 @@ def apply_config(config: Config, llm: LLMClient) -> None:
 
     for model in config["ollama_models"]:
         llm.add_local_model(model, "ollama")
-
-
-def save_config(config: Config) -> None:
-    with open(CONFIG_FILE, "w") as f:
-        json.dump(config, f, indent=4)
 
 
 def add_provider(provider: str, api_key: str) -> int:
@@ -272,8 +267,7 @@ def show_config() -> int:
 
 def process_config_command(command: List[str], llm: LLMClient) -> int:
     if len(command) == 0 or command[0] == "help":
-        with open(HELP_FILE, "r") as f:
-            print(f.read())
+        resource_print(HELP_FILE)
         return 0
 
     elif command[0] == "add":

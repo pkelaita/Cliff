@@ -1,8 +1,8 @@
-from typing import List, Any, Optional, Type
+from typing import List, Any, Optional, Type, Callable
 import time
 import sys
 import threading
-
+import subprocess
 from rich.console import Console
 
 loading_frames: List[str] = ["⠋ ", "⠙ ", "⠹ ", "⠸ ", "⠼ ", "⠴ ", "⠦ ", "⠧ ", "⠇ ", "⠏ "]
@@ -60,3 +60,13 @@ class LoadingAnimation:
 def cliff_print(message: str) -> None:
     console.print("[cyan][Cliff][/cyan]", highlight=False, end=" ")
     print(message)
+
+
+def resource_print(file_path: str, fn: Optional[Callable[[str], str]] = None) -> None:
+    with open(file_path, "r") as f:
+        content = f.read()
+        if fn:
+            content = fn(content)
+        subprocess.run(
+            ["less", "-R", "-X", "-J", "-F"], input=content.encode(), check=True
+        )

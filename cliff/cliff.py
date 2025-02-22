@@ -14,11 +14,10 @@ from cliff.config import (
     apply_config,
     load_config,
     process_config_command,
-    get_memory_window,
 )
 from cliff.memory import process_memory_command, load_memory, update_memory
 from cliff.notepad import process_notepad_command, load_notepad
-from cliff.console import LoadingAnimation, cliff_print
+from cliff.console import LoadingAnimation, cliff_print, resource_print
 
 HOME_DIR = os.path.expanduser("~")
 if not os.path.exists(os.path.join(HOME_DIR, ".cliff")):
@@ -44,15 +43,15 @@ POSSIBLE_FLAGS = [
 
 CWD = os.getcwd()
 
-WINDOW_SIZE = get_memory_window()
-
 
 def main() -> None:
     # parse args
     args = sys.argv[1:]
     if len(args) == 0:
-        with open(MAN_PAGE, "r") as f:
-            print(f.read().replace("{{version}}", __version__))
+        resource_print(
+            MAN_PAGE,
+            lambda content: content.replace("{{version}}", __version__),
+        )
         return
 
     flags = []
@@ -72,13 +71,17 @@ def main() -> None:
     memory_command = "--memory" in flags
     notepad_command = "-n" in flags or "--notepad" in flags
 
+    # load config
+    config = load_config()
+    timeout = config["timeout_seconds"]
+    memory_window = config["memory_window"]
+
     # load memory
     mem = ChatMemory()
-    load_memory(mem, WINDOW_SIZE)
+    load_memory(mem, memory_window)
     llm = LLMClient(memory=mem)
 
     # apply config
-    config = load_config()
     apply_config(config, llm)
 
     # Check for options
@@ -86,7 +89,7 @@ def main() -> None:
         process_config_command(args, llm)
 
     elif memory_command:
-        process_memory_command(args, WINDOW_SIZE)
+        process_memory_command(args, memory_window)
 
     elif notepad_command:
         process_notepad_command(args)
@@ -97,13 +100,11 @@ def main() -> None:
     # Run standard generation
     else:
         if len(llm.get_active_models()) == 0:
-            with open(NO_ACTIVE_MODELS, "r") as f:
-                cliff_print(f.read())
+            resource_print(NO_ACTIVE_MODELS)
             sys.exit(0)
 
         if config["default_model"] is None and model_arg is None:
-            with open(AMBIGUOUS_MODEL, "r") as f:
-                cliff_print(f.read())
+            resource_print(AMBIGUOUS_MODEL)
             sys.exit(0)
 
         pl = PromptLoader(prompts_base_dir=os.path.join(DIR, "prompts"))
@@ -139,7 +140,7 @@ def main() -> None:
                     prompt=" ".join(args),
                     system_prompt=sysprompt,
                     json_mode=True,
-                    timeout=config["timeout_seconds"],
+                    timeout=timeout,
                 )
         except LLMTimeoutError:
             cliff_print(
@@ -162,10 +163,9 @@ def main() -> None:
         if valid:
             print(command)
             subprocess.run(["pbcopy"], input=command, text=True)
-            update_memory(mem, WINDOW_SIZE)
+            update_memory(mem, memory_window)
         else:
-            with open(MALFORMED_RESPONSE, "r") as f:
-                cliff_print(f.read())
+            resource_print(MALFORMED_RESPONSE)
 
 
 if __name__ == "__main__":  # pragma: no cover

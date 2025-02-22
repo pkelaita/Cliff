@@ -178,7 +178,9 @@ def test_main_clear_notepad(
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
+@patch("cliff.cliff.resource_print")
 def test_main_no_default_model(
+    mock_resource_print,
     mock_get_active_models,
     mock_llm_call,
     mock_loading,
@@ -186,7 +188,6 @@ def test_main_no_default_model(
     mock_apply_config,
     mock_load_config,
     monkeypatch,
-    capsys,
 ):
     """
     main() should display help message and exit when no default model is set
@@ -195,6 +196,8 @@ def test_main_no_default_model(
     mock_load_config.return_value = {
         "default_model": None,
         "provider_credentials": {"test": "key"},
+        "memory_window": 10,
+        "timeout_seconds": 30,
     }
     mock_get_active_models.return_value = ["test-model"]
 
@@ -203,17 +206,16 @@ def test_main_no_default_model(
     with pytest.raises(SystemExit) as e:
         main()
 
-    captured = capsys.readouterr()
-    assert "You can set a default model" in captured.out
-    assert "cliff --config default-model" in captured.out
-    assert "cliff --model [model]" in captured.out
+    mock_resource_print.assert_called_once()
+    called_path = mock_resource_print.call_args[0][0]
+    assert called_path.endswith("resources/ambiguous_model.txt")
     assert e.value.code == 0
 
 
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
-@patch("cliff.cliff.update_memory")
+@patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("cliff.cliff.subprocess.run")
 @patch("l2m2.client.LLMClient.get_active_models")
@@ -237,6 +239,7 @@ def test_main_generate_command(
     mock_load_config.return_value = {
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
+        "memory_window": 10,
         "timeout_seconds": 30,
     }
     mock_get_active_models.return_value = ["test-model"]
@@ -256,7 +259,9 @@ def test_main_generate_command(
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
+@patch("cliff.cliff.resource_print")
 def test_main_no_active_models(
+    mock_resource_print,
     mock_get_active_models,
     mock_llm_call,
     mock_loading,
@@ -264,20 +269,24 @@ def test_main_no_active_models(
     mock_apply_config,
     mock_load_config,
     monkeypatch,
-    capsys,
 ):
     """
     main() with no active models should display welcome message.
     """
-    mock_load_config.return_value = {"provider_credentials": {}}
+    mock_load_config.return_value = {
+        "provider_credentials": {},
+        "timeout_seconds": 30,
+        "memory_window": 10,
+    }
     mock_get_active_models.return_value = []
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
     with pytest.raises(SystemExit) as e:
         main()
 
-    captured = capsys.readouterr()
-    assert "Welcome to Cliff" in captured.out
+    mock_resource_print.assert_called_once()
+    called_path = mock_resource_print.call_args[0][0]
+    assert called_path.endswith("resources/no_active_models.txt")
     assert e.value.code == 0
 
 
@@ -287,7 +296,9 @@ def test_main_no_active_models(
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
+@patch("cliff.cliff.resource_print")
 def test_main_invalid_json_response(
+    mock_resource_print,
     mock_get_active_models,
     mock_llm_call,
     mock_loading,
@@ -295,7 +306,6 @@ def test_main_invalid_json_response(
     mock_apply_config,
     mock_load_config,
     monkeypatch,
-    capsys,
 ):
     """
     main() should handle invalid JSON response from LLM.
@@ -304,6 +314,7 @@ def test_main_invalid_json_response(
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
         "timeout_seconds": 30,
+        "memory_window": 10,
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = "invalid json"
@@ -311,8 +322,9 @@ def test_main_invalid_json_response(
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
     main()
-    captured = capsys.readouterr()
-    assert "bad or malformed response" in captured.out
+    mock_resource_print.assert_called_once()
+    called_path = mock_resource_print.call_args[0][0]
+    assert called_path.endswith("resources/malformed_response.txt")
 
 
 @patch("cliff.cliff.load_config")
@@ -321,7 +333,9 @@ def test_main_invalid_json_response(
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
+@patch("cliff.cliff.resource_print")
 def test_main_bad_llm_response(
+    mock_resource_print,
     mock_get_active_models,
     mock_llm_call,
     mock_loading,
@@ -329,7 +343,6 @@ def test_main_bad_llm_response(
     mock_apply_config,
     mock_load_config,
     monkeypatch,
-    capsys,
 ):
     """
     main() should handle LLM response missing 'command' key.
@@ -338,6 +351,7 @@ def test_main_bad_llm_response(
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
         "timeout_seconds": 30,
+        "memory_window": 10,
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = '{"some_other_key": "value"}'
@@ -345,8 +359,9 @@ def test_main_bad_llm_response(
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
     main()
-    captured = capsys.readouterr()
-    assert "bad or malformed response" in captured.out
+    mock_resource_print.assert_called_once()
+    called_path = mock_resource_print.call_args[0][0]
+    assert called_path.endswith("resources/malformed_response.txt")
 
 
 # -- Tests for Model Selection -- #
@@ -374,6 +389,7 @@ def test_main_specific_model(
         "provider_credentials": {"test": "key"},
         "default_model": "some-model",
         "timeout_seconds": 30,
+        "memory_window": 10,
     }
     mock_get_active_models.return_value = ["specific-model"]
     mock_llm_call.return_value = '{"command": "ls -l"}'
@@ -424,6 +440,7 @@ def test_main_llm_timeout(
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
         "timeout_seconds": 30,
+        "memory_window": 10,
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.side_effect = LLMTimeoutError("LLM timeout")
