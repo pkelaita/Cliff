@@ -87,17 +87,13 @@ cliff --model gpt-4o kill the process running on port 8080
 
 To view the man page, run `cliff` with no arguments.
 
----
-
-#### Chat Memory
+### Chat Memory
 
 By default, Cliff has chat memory enabled with a sliding window size of 10 turns. You can view your memory with `cliff --memory show` and clear it with `cliff --memory clear`.
 
 If you'd like to change the window size, run `cliff --config memory-window [new size]`. If you want to disable memory, just set the window size to 0.
 
----
-
-#### Command Notepad
+### Command Notepad
 
 Cliff's chat memory does not have access to command outputs, but you can optionally share them with Cliff to help it debug and improve its responses via its command notepad.
 
@@ -107,14 +103,10 @@ Cliff's chat memory does not have access to command outputs, but you can optiona
 
 _Tip:_ You'll usually have to put quotes around your command if it contains special characters – e.g., `cliff --notepad run "ps ax | head -n 10"` – for Cliff to properly capture and execute it.
 
----
-
-#### Other Useful Features
+### Other Useful Features
 
 - The default generation timeout is 20 seconds. You can change it by running `cliff --config timeout [new timeout]`.
 - You can run `cliff --clear` as a shortcut to clear both Cliff's chat memory and command notepad.
-
----
 
 That's it! It's pretty simple which is the point.
 
