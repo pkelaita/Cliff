@@ -1,6 +1,8 @@
 import pytest
 from unittest.mock import patch, mock_open
 
+from l2m2.exceptions import LLMTimeoutError
+
 from cliff.cliff import main, MAN_PAGE
 
 
@@ -235,6 +237,7 @@ def test_main_generate_command(
     mock_load_config.return_value = {
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
+        "timeout_seconds": 30,
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = '{"command": "ls -l"}'
@@ -300,6 +303,7 @@ def test_main_invalid_json_response(
     mock_load_config.return_value = {
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
+        "timeout_seconds": 30,
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = "invalid json"
@@ -333,6 +337,7 @@ def test_main_bad_llm_response(
     mock_load_config.return_value = {
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
+        "timeout_seconds": 30,
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = '{"some_other_key": "value"}'
@@ -368,6 +373,7 @@ def test_main_specific_model(
     mock_load_config.return_value = {
         "provider_credentials": {"test": "key"},
         "default_model": "some-model",
+        "timeout_seconds": 30,
     }
     mock_get_active_models.return_value = ["specific-model"]
     mock_llm_call.return_value = '{"command": "ls -l"}'
@@ -417,11 +423,15 @@ def test_main_llm_timeout(
     mock_load_config.return_value = {
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
+        "timeout_seconds": 30,
     }
     mock_get_active_models.return_value = ["test-model"]
-    mock_llm_call.side_effect = TimeoutError("LLM timeout")
+    mock_llm_call.side_effect = LLMTimeoutError("LLM timeout")
 
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
-    with pytest.raises(TimeoutError):
+    with pytest.raises(SystemExit) as e:
         main()
+    captured = capsys.readouterr()
+    assert "LLM call timed out" in captured.out
+    assert e.value.code == 1

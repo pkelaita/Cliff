@@ -1,5 +1,4 @@
 from unittest.mock import patch, mock_open, call
-import json
 
 from l2m2.client import LLMClient
 
@@ -21,6 +20,7 @@ from cliff.config import (
     remove_ollama,
     update_memory_window,
     reset_config,
+    update_timeout,
 )
 
 
@@ -32,6 +32,7 @@ def get_test_base_config():
         "preferred_providers": {},
         "ollama_models": [],
         "memory_window": 10,
+        "timeout_seconds": 20,
     }
 
 
@@ -76,18 +77,29 @@ def test_load_config_file_not_exist(
 
 
 @patch("os.path.exists", return_value=True)
-@patch(
-    "builtins.open",
-    new_callable=mock_open,
-    read_data=json.dumps(get_test_config_with_openai()),
-)
-@patch("json.load", side_effect=lambda f: json.loads(f.read()))
-def test_load_config_file_exists(mock_json_load, mock_file, mock_path_exists):
+@patch("builtins.open", new_callable=mock_open)
+@patch("json.load")
+def test_load_config_with_missing_fields(mock_json_load, mock_file, mock_path_exists):
     """
-    If config file exists, load_config() should read it and return its content.
+    Test that load_config() properly adds missing fields from DEFAULT_CONFIG when loading a partial config.
     """
+    # Create a partial config missing some fields
+    partial_config = {
+        "provider_credentials": {"openai": "secret"},
+        "default_model": "gpt-4o",
+    }
+
+    mock_json_load.return_value = partial_config
+
     config = load_config()
-    mock_file.assert_called_once_with(CONFIG_FILE, "r")
+
+    # Check that missing fields were added with default values
+    assert config["preferred_providers"] == DEFAULT_CONFIG["preferred_providers"]
+    assert config["ollama_models"] == DEFAULT_CONFIG["ollama_models"]
+    assert config["memory_window"] == DEFAULT_CONFIG["memory_window"]
+    assert config["timeout_seconds"] == DEFAULT_CONFIG["timeout_seconds"]
+
+    # Check that existing fields were preserved
     assert config["provider_credentials"] == {"openai": "secret"}
     assert config["default_model"] == "gpt-4o"
 
@@ -318,6 +330,7 @@ def test_show_config_full(mock_load_config, capsys):
         "preferred_providers": {"gpt-4o": "openai", "claude-3": "anthropic"},
         "ollama_models": ["llama2", "mistral"],
         "memory_window": 15,
+        "timeout_seconds": 20,
     }
     mock_load_config.return_value = config
 
@@ -327,6 +340,7 @@ def test_show_config_full(mock_load_config, capsys):
     assert result == 0
     assert "gpt-4o" in captured.out
     assert "15 Turns" in captured.out
+    assert "20 Seconds" in captured.out
     assert "openai" in captured.out
     assert "anthropic" in captured.out
     assert "llama2" in captured.out
@@ -346,6 +360,7 @@ def test_show_config_partial(mock_load_config, capsys):
         "preferred_providers": {},
         "ollama_models": ["llama2"],
         "memory_window": 10,
+        "timeout_seconds": 20,
     }
     mock_load_config.return_value = config
 
@@ -355,6 +370,7 @@ def test_show_config_partial(mock_load_config, capsys):
     assert result == 0
     assert "gpt-4o" in captured.out
     assert "10 Turns" in captured.out
+    assert "20 Seconds" in captured.out
     assert "openai" in captured.out
     assert "llama2" in captured.out
     assert "Preferred Providers" not in captured.out
@@ -643,3 +659,35 @@ def test_process_config_command_memory_window_usage():
     llm = LLMClient()
     result = process_config_command(["memory-window"], llm)
     assert result == 1
+
+
+@patch("cliff.config.update_timeout", return_value=0)
+def test_process_config_command_timeout(mock_update_timeout):
+    """
+    process_config_command should invoke update_timeout when "timeout" is specified.
+    """
+    llm = LLMClient()
+    result = process_config_command(["timeout", "15"], llm)
+    mock_update_timeout.assert_called_once_with(15)
+    assert result == 0
+
+
+def test_process_config_command_timeout_usage():
+    """
+    process_config_command with "timeout" but incorrect arguments should return 1.
+    """
+    llm = LLMClient()
+    result = process_config_command(["timeout"], llm)
+    assert result == 1
+
+
+@patch("cliff.config.load_config")
+@patch("cliff.config.save_config")
+def test_update_timeout_success(mock_save_config, mock_load_config):
+    """
+    update_timeout() should update the timeout seconds and return 0.
+    """
+    mock_load_config.return_value = get_test_base_config()
+    result = update_timeout(30)
+    mock_save_config.assert_called_once()
+    assert result == 0

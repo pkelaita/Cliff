@@ -43,6 +43,7 @@ class Config(TypedDict):
     preferred_providers: Dict[str, str]
     ollama_models: List[str]
     memory_window: int
+    timeout_seconds: int
 
 
 DEFAULT_CONFIG: Config = {
@@ -51,6 +52,7 @@ DEFAULT_CONFIG: Config = {
     "preferred_providers": {},
     "ollama_models": [],
     "memory_window": 10,
+    "timeout_seconds": 20,
 }
 
 
@@ -62,12 +64,17 @@ def get_memory_window() -> int:
 def load_config() -> Config:
     if not os.path.exists(CONFIG_FILE):
         os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(DEFAULT_CONFIG, f, indent=4)
         config = DEFAULT_CONFIG
     else:
         with open(CONFIG_FILE, "r") as f:
             config = json.load(f)
+
+    # Ensure config has all fields
+    for field in DEFAULT_CONFIG:
+        if field not in config:
+            config[field] = DEFAULT_CONFIG[field]  # type: ignore
+
+    save_config(config)
 
     return config
 
@@ -189,6 +196,14 @@ def update_memory_window(window: int) -> int:
     return 0
 
 
+def update_timeout(timeout: int) -> int:
+    config = load_config()
+    config["timeout_seconds"] = timeout
+    save_config(config)
+    cliff_print(f"Updated timeout to {timeout} seconds")
+    return 0
+
+
 def reset_config() -> int:
     save_config(DEFAULT_CONFIG)
     cliff_print("Reset config to defaults")
@@ -206,19 +221,14 @@ def show_config() -> int:
     table.add_column("Key", style="cyan")
     table.add_column("Value")
 
-    table.add_row(
-        "Default Model",
-        (
-            f"[magenta]{str(config['default_model'])}[/]"
-            if config["default_model"]
-            else "[italic red]Not set[/]"
-        ),
-    )
-    table.add_row(
-        "Memory Window",
-        f"{str(config['memory_window'])} Turns",
-    )
+    # Default Model
+    default_model = config["default_model"]
+    if default_model:
+        table.add_row("Default Model", f"[magenta]{default_model}[/]")
+    else:
+        table.add_row("Default Model", "[italic red]Not set[/]")
 
+    # Provider Credentials
     creds = config["provider_credentials"]
     if creds:
         cred_list = "\n".join(
@@ -229,6 +239,7 @@ def show_config() -> int:
         cred_list = "[italic red]No providers added[/]"
     table.add_row("Provider Credentials", cred_list)
 
+    # Preferred Providers
     prefs = config["preferred_providers"]
     if prefs:
         pref_list = "\n".join(
@@ -237,10 +248,19 @@ def show_config() -> int:
         )
         table.add_row("Preferred Providers", pref_list)
 
+    # Ollama Models
     models = config["ollama_models"]
     if models:
         model_list = "\n".join(f"• [magenta]{model}[/]" for model in models)
         table.add_row("Ollama Models", model_list)
+
+    # Memory Window
+    memory_window = config["memory_window"]
+    table.add_row("Memory Window", f"{memory_window} Turns")
+
+    # Timeout
+    timeout = config["timeout_seconds"]
+    table.add_row("Timeout", f"{timeout} Seconds")
 
     console.print(table)
     print()
@@ -297,6 +317,12 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
             cliff_print("Usage: memory-window [window-size]")
             return 1
         return update_memory_window(int(command[1]))
+
+    elif command[0] == "timeout":
+        if len(command) != 2:
+            cliff_print("Usage: timeout [seconds]")
+            return 1
+        return update_timeout(int(command[1]))
 
     elif command[0] == "reset":
         return reset_config()

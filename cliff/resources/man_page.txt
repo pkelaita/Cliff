@@ -29,7 +29,7 @@ Options
         Show or clear Cliff's command notepad.
 
     --config [options]
-        Configure Cliff. See `cliff --config help` for more information.
+        Configure Cliff. Run "cliff --config help" for more information.
 
 
 Copyright 2025 Pierce Kelaita

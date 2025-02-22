@@ -7,6 +7,8 @@ from l2m2.client import LLMClient
 from l2m2.memory import ChatMemory
 from l2m2.tools import PromptLoader
 
+from l2m2.exceptions import LLMTimeoutError
+
 from cliff import __version__
 from cliff.config import (
     apply_config,
@@ -130,14 +132,20 @@ def main() -> None:
         else:
             model = str(config["default_model"])
 
-        with LoadingAnimation():
-            result = llm.call(
-                model=model,
-                prompt=" ".join(args),
-                system_prompt=sysprompt,
-                json_mode=True,
-                timeout=25,
+        try:
+            with LoadingAnimation():
+                result = llm.call(
+                    model=model,
+                    prompt=" ".join(args),
+                    system_prompt=sysprompt,
+                    json_mode=True,
+                    timeout=config["timeout_seconds"],
+                )
+        except LLMTimeoutError:
+            cliff_print(
+                'LLM call timed out. Try increasing the timeout with "cliff --config timeout [seconds]"'
             )
+            sys.exit(1)
 
         valid = True
         try:
