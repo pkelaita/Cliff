@@ -41,7 +41,7 @@ def show_notepad() -> None:
         content = f.read()
         if content == "":
             cliff_print(
-                'Notepad is empty. Use "cliff --notepad run [command" to add to it.'
+                'Notepad is empty. Use "cliff --notepad run [command]" to add to it.'
             )
         else:
             cliff_print("Notepad contents:")

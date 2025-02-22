@@ -28,6 +28,9 @@ Options
     -n, --notepad [show|clear]
         Show or clear Cliff's command notepad.
 
+    --clear
+        Shortcut to clear both Cliff's chat memory and command notepad.
+
     --config [options]
         Configure Cliff. Run "cliff --config help" for more information.
 

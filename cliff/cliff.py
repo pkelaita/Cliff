@@ -15,8 +15,17 @@ from cliff.config import (
     load_config,
     process_config_command,
 )
-from cliff.memory import process_memory_command, load_memory, update_memory
-from cliff.notepad import process_notepad_command, load_notepad
+from cliff.memory import (
+    process_memory_command,
+    load_memory,
+    update_memory,
+    clear_memory,
+)
+from cliff.notepad import (
+    process_notepad_command,
+    load_notepad,
+    clear_notepad,
+)
 from cliff.console import LoadingAnimation, cliff_print, resource_print
 
 HOME_DIR = os.path.expanduser("~")
@@ -39,6 +48,7 @@ POSSIBLE_FLAGS = [
     "--memory",
     "-n",
     "--notepad",
+    "--clear",
 ]
 
 CWD = os.getcwd()
@@ -70,6 +80,7 @@ def main() -> None:
     config_command = "-c" in flags or "--config" in flags
     memory_command = "--memory" in flags
     notepad_command = "-n" in flags or "--notepad" in flags
+    clear_command = "--clear" in flags
 
     # load config
     config = load_config()
@@ -93,6 +104,10 @@ def main() -> None:
 
     elif notepad_command:
         process_notepad_command(args)
+
+    elif clear_command:
+        clear_memory()
+        clear_notepad()
 
     elif view_version:
         cliff_print(f"Version {__version__}")

@@ -169,6 +169,25 @@ def test_main_clear_notepad(
     mock_process_notepad.assert_called_once()
 
 
+# -- Tests for Misc Options -- #
+
+
+@patch("cliff.cliff.clear_memory")
+@patch("cliff.cliff.clear_notepad")
+def test_main_clear_command(
+    mock_clear_memory,
+    mock_clear_notepad,
+    monkeypatch,
+):
+    """
+    main() with clear command should invoke clear_memory and clear_notepad.
+    """
+    monkeypatch.setattr("sys.argv", ["cliff.py", "--clear"])
+    main()
+    mock_clear_memory.assert_called_once()
+    mock_clear_notepad.assert_called_once()
+
+
 # -- Tests for Command Generation -- #
 
 
