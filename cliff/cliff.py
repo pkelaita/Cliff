@@ -108,6 +108,7 @@ def main() -> None:
     elif clear_command:
         clear_memory()
         clear_notepad()
+        cliff_print("Cleared memory and notepad.")
 
     elif view_version:
         cliff_print(f"Version {__version__}")
