@@ -60,7 +60,6 @@ _Configuration tips_
 
 - In order to use local models, make sure you have Ollama installed and running and have the model loaded ([their docs](https://github.com/ollama/ollama#readme)).
 - If you add multiple models, you can set your default model with: `cliff --config default-model [model]`.
-- If you want to edit your config file directly, it's located at `~/.cliff/config.json`.
 
 For a full overview of the configuration system, run `cliff --config help`, and for a full list of supported models for each provider, see [L2M2's docs](https://github.com/pkelaita/l2m2/blob/main/docs/supported_models.md).
 
@@ -107,6 +106,13 @@ Cliff's chat memory does not have access to command outputs, but you can optiona
 - `-n` can be used as an alias for `--notepad`.
 
 _Tip:_ You'll usually have to put quotes around your command if it contains special characters – e.g., `cliff --notepad run "ps ax | head -n 10"` – for Cliff to properly capture and execute it.
+
+---
+
+#### Other Useful Features
+
+- The default generation timeout is 20 seconds. You can change it by running `cliff --config timeout [new timeout]`.
+- You can run `cliff --clear` as a shortcut to clear both Cliff's chat memory and command notepad.
 
 ---
 
