@@ -1,8 +1,31 @@
 # Changelog
 
-_Current version: 0.1.1_
+_Current version: 0.2.0_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.2.0 - February 22, 2025
+
+#### Added
+
+- [L2M2](https://github.com/pkelaita/l2m2) has been updated from v0.0.41 to v0.0.43, which adds support for the following models:
+  - `o3-mini` via OpenAI
+  - `gemini-2.0-pro` and `gemini-2.0-flash-lite` via Google
+  - `qwen-2.5-32b`, `deepseek-r1-distill-qwen-32b`, and `deepseek-r1-distill-llama-70b` via Groq
+  - `command-r7b` via Cohere
+- Malformed or out-of-date config files are now automatically corrected and/or handled gracefully.
+- Added a new command, `cliff --clear`, which is a shortcut for `cliff --memory clear && cliff --notepad clear`.
+- Added GitHub Actions for CI/CD.
+
+#### Changed
+
+- Standard outputs, such as `cliff --config show` and `cliff --memory show`, are now formatted and colorized with [Rich](https://github.com/Textualize/rich).
+- Some default models have been switched back to their larger counterparts due to improved quality and latency.
+  - OpenAI: `gpt-4o-mini` → `gpt-4o`
+  - Groq: `llama-3.2-1b` → `llama-3.3-70b`
+  - Replicate: `llama-3-8b` → `llama-3-70b`
+  - Cerebras: `llama-3.1-8b` → `llama-3.3-70b`
+- Man pages now print in pager mode.
 
 ### 0.1.1 - February 4, 2025
 
