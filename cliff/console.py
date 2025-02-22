@@ -10,7 +10,9 @@ loading_frames: List[str] = ["⠋ ", "⠙ ", "⠹ ", "⠸ ", "⠼ ", "⠴ ", "�
 console = Console()
 
 
-def _animate(stop_event: threading.Event, delay: float = 0.05) -> None:
+def _animate(
+    stop_event: threading.Event, delay: float = 0.05
+) -> None:  # pragma: no cover - would be flaky due to threading/timing
     while not stop_event.is_set():
         for frame in loading_frames:
             if stop_event.is_set():
