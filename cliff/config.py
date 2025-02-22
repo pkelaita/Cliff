@@ -26,12 +26,12 @@ HOSTED_PROVIDERS = {
 }
 
 DEFAULT_MODEL_MAPPING = {
-    "groq": "llama-3.2-1b",
+    "groq": "llama-3.3-70b",
     "cohere": "command-r7b",
     "mistral": "mistral-small",
-    "replicate": "llama-3-8b",
-    "openai": "gpt-4o-mini",
-    "cerebras": "llama-3.1-8b",
+    "replicate": "llama-3-70b",
+    "openai": "gpt-4o",
+    "cerebras": "llama-3.3-70b",
     "google": "gemini-2.0-flash",
     "anthropic": "claude-3.5-haiku",
 }
