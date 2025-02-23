@@ -4,7 +4,7 @@ _Current version: 0.2.1_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
 
-## 0.2.1 - February 23, 2025
+### 0.2.1 - February 22, 2025
 
 #### Fixed
 
