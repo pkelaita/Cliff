@@ -1,4 +1,6 @@
-# Cliff
+# Cliff: Generate Unix Commands in the Terminal
+
+![CI](https://github.com/pkelaita/cliff/actions/workflows/ci.yml/badge.svg) [![codecov](https://codecov.io/gh/pkelaita/Cliff/graph/badge.svg?token=oQ9Jp8spXX)](https://codecov.io/gh/pkelaita/Cliff) [![PyPI Version](https://badge.fury.io/py/cliff-cli.svg)](https://pypi.org/project/cliff-cli/)
 
 Cliff (**C**ommand **L**ine **I**nter**F**ace **F**riend) is an AI assistant that helps you come up with Unix commands. Given an objective (for example, "kill the process running on port 8080"), Cliff will generate a command that does the objective and add it to your paste buffer for you to easily paste into your terminal.
 
