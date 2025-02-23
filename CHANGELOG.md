@@ -25,6 +25,8 @@ _Current version: 0.2.0_
   - Groq: `llama-3.2-1b` → `llama-3.3-70b`
   - Replicate: `llama-3-8b` → `llama-3-70b`
   - Cerebras: `llama-3.1-8b` → `llama-3.3-70b`
+  - Anthropic: `claude-3.5-haiku` → `claude-3.5-sonnet`
+  - Cohere: `command-r7b` → `command-r`
 - Man pages now print in pager mode.
 
 ### 0.1.1 - February 4, 2025
