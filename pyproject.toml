@@ -57,3 +57,8 @@ warn_return_any = true
 
 [tool.uv]
 package = true
+
+
+[tool.ruff]
+exclude = ["scripts"]
+line-length = 120

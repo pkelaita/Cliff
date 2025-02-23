@@ -48,3 +48,6 @@ clean:
 
 publish: clean build
 	uv run twine upload dist/*
+
+update-docs:
+	uv run scripts/update_docs.py
