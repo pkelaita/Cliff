@@ -1,6 +1,7 @@
 .DS_Store
 
 venv/
+.venv/
 __pycache__/
 .pytest_cache/
 .tox/
@@ -11,5 +12,5 @@ __pycache__/
 build/
 dist/
 
-# A shortcut for `python cliff/cliff.py $@` for easier development
+# A shortcut for `python -m cliff.cliff $@` for easier development
 /dev

@@ -60,7 +60,6 @@ _Configuration tips_
 
 - In order to use local models, make sure you have Ollama installed and running and have the model loaded ([their docs](https://github.com/ollama/ollama#readme)).
 - If you add multiple models, you can set your default model with: `cliff --config default-model [model]`.
-- If you want to edit your config file directly, it's located at `~/.cliff/config.json`.
 
 For a full overview of the configuration system, run `cliff --config help`, and for a full list of supported models for each provider, see [L2M2's docs](https://github.com/pkelaita/l2m2/blob/main/docs/supported_models.md).
 
@@ -80,7 +79,7 @@ If needed (i.e., to avoid escaping special characters), you can use quotes.
 cliff "kill the process that's running on port 8080"
 ```
 
-If you want to specify which model to use, you can do so with the `--model` flag.
+If you want to specify which model to use, you can do so with the `--model` or `-m` flag.
 
 ```
 cliff --model gpt-4o kill the process running on port 8080
@@ -88,27 +87,27 @@ cliff --model gpt-4o kill the process running on port 8080
 
 To view the man page, run `cliff` with no arguments.
 
----
-
-#### Chat Memory
+### Chat Memory
 
 By default, Cliff has chat memory enabled with a sliding window size of 10 turns. You can view your memory with `cliff --memory show` and clear it with `cliff --memory clear`.
 
 If you'd like to change the window size, run `cliff --config memory-window [new size]`. If you want to disable memory, just set the window size to 0.
 
----
+### Command Notepad
 
-#### Storing Command Outputs
+Cliff's chat memory does not have access to command outputs, but you can optionally share them with Cliff to help it debug and improve its responses via its command notepad.
 
-Cliff's chat memory does not have access to command outputs, but you can optionally share them with Cliff to help it debug and improve its responses.
+- To run a command and store its output for Cliff, run `cliff --notepad run [command]`.
+- To view your command notepad, run `cliff --notepad show`, and to clear it, run `cliff --notepad clear`.
+- `-n` can be used as an alias for `--notepad`.
 
-- To run a command and store its output for Cliff, run `cliff -r [command]` or `cliff --recall [command]`.
-- To view all recalled commands and their outputs, run `cliff --show-recall` or `cliff -sr`.
-- To clear Cliff's recall storage, run `cliff --clear-recall` or `cliff -cr`.
+_Tip:_ You'll usually have to put quotes around your command if it contains special characters – e.g., `cliff --notepad run "ps ax | head -n 10"` – for Cliff to properly capture and execute it.
 
-_Tip:_ You'll usually have to put quotes around your command if it contains special characters – e.g., `cliff -r "ps ax | head -n 10"` – for Cliff to properly capture and execute it.
+### Other Useful Features
 
----
+- The default generation timeout is 20 seconds. You can change it by running `cliff --config timeout [new timeout]`.
+- To view your configuration, run `cliff --config show`.
+- You can run `cliff --clear` as a shortcut to clear both Cliff's chat memory and command notepad.
 
 That's it! It's pretty simple which is the point.
 

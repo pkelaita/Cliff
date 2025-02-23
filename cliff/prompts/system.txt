@@ -9,7 +9,7 @@ The user is on a {{os_name}} machine, version {{os_version}}, so please make sur
 The user's current directory is {{cwd}}.
 
 
-{{recall_prompt}}
+{{notepad_prompt}}
 
 
 Always try to do the thing in the best, most efficient way possible. Be clever and creative!

@@ -1,10 +1,19 @@
 import pytest
 from unittest.mock import patch, mock_open
 
-from cliff.cliff import main, MAN_PAGE, CWD
+from l2m2.exceptions import LLMTimeoutError
+
+from cliff.cliff import main, MAN_PAGE
 
 
 # -- Tests for Basic Operations -- #
+
+
+@pytest.fixture
+def mock_pbcopy():
+    """Mock the pbcopy subprocess call"""
+    with patch("cliff.cliff.subprocess.run") as mock:
+        yield mock
 
 
 @patch("cliff.cliff.load_config")
@@ -18,6 +27,7 @@ def test_main_no_args(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -41,6 +51,7 @@ def test_main_version_flag(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
     capsys,
 ):
@@ -67,6 +78,7 @@ def test_main_config_command(
     mock_apply_config,
     mock_load_config,
     mock_process_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -91,6 +103,7 @@ def test_main_memory_command(
     mock_apply_config,
     mock_load_config,
     mock_process_memory,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
@@ -101,108 +114,93 @@ def test_main_memory_command(
     mock_process_memory.assert_called_once()
 
 
-# -- Tests for Recall Functionality -- #
+# -- Tests for Notepad Functionality -- #
 
 
+@patch("cliff.cliff.process_notepad_command", return_value=0)
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
-@patch("cliff.cliff.subprocess.run")
 @patch("cliff.cliff.LoadingAnimation")
-def test_main_store_recall(
+def test_main_show_notepad(
     mock_loading,
-    mock_subprocess,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_process_notepad,
+    mock_pbcopy,
     monkeypatch,
-    tmp_path,
 ):
     """
-    main() with recall flag should store command output.
+    main() with notepad command should invoke process_notepad_command.
     """
-    mock_subprocess.return_value.stdout = "command output"
-    mock_subprocess.return_value.stderr = ""
-    recall_file = tmp_path / "recall"
-    monkeypatch.setattr("cliff.cliff.RECALL_FILE", str(recall_file))
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-r", "ls -l"])
-
+    monkeypatch.setattr("sys.argv", ["cliff.py", "--notepad", "show"])
     main()
-
-    mock_subprocess.assert_called_once_with(
-        "ls -l", shell=True, capture_output=True, text=True
-    )
-
-    assert recall_file.read_text().strip() == f"{CWD} $ ls -l\ncommand output"
+    mock_process_notepad.assert_called_once()
 
 
+@patch("cliff.cliff.process_notepad_command", return_value=0)
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.LoadingAnimation")
-def test_main_show_recall_empty(
+def test_main_run_notepad(
     mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_process_notepad,
+    mock_pbcopy,
     monkeypatch,
-    capsys,
 ):
     """
-    main() with show-recall flag should handle empty recall file.
+    main() with notepad command should invoke process_notepad_command.
     """
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-sr"])
-    with patch("builtins.open", mock_open(read_data="")):
-        main()
-    captured = capsys.readouterr()
-    assert "No recalled commands" in captured.out
+    monkeypatch.setattr("sys.argv", ["cliff.py", "--notepad", "run", "ls -l"])
+    main()
+    mock_process_notepad.assert_called_once()
 
 
+@patch("cliff.cliff.process_notepad_command", return_value=0)
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.LoadingAnimation")
-def test_main_show_recall_with_content(
+def test_main_clear_notepad(
     mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_process_notepad,
+    mock_pbcopy,
     monkeypatch,
-    capsys,
 ):
     """
-    main() with show-recall flag should display recall content.
+    main() with notepad command should invoke process_notepad_command.
     """
-    recall_content = "some/path $ ls\nfile1 file2\n"
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-sr"])
-    with patch("builtins.open", mock_open(read_data=recall_content)):
-        main()
-    captured = capsys.readouterr()
-    assert recall_content in captured.out
+    monkeypatch.setattr("sys.argv", ["cliff.py", "--notepad", "clear"])
+    main()
+    mock_process_notepad.assert_called_once()
 
 
-@patch("cliff.cliff.load_config")
-@patch("cliff.cliff.apply_config")
-@patch("cliff.cliff.load_memory")
-@patch("cliff.cliff.LoadingAnimation")
-def test_main_clear_recall(
-    mock_loading,
-    mock_load_mem,
-    mock_apply_config,
-    mock_load_config,
+# -- Tests for Misc Options -- #
+
+
+@patch("cliff.cliff.clear_memory")
+@patch("cliff.cliff.clear_notepad")
+def test_main_clear_command(
+    mock_clear_memory,
+    mock_clear_notepad,
+    mock_pbcopy,
     monkeypatch,
-    capsys,
 ):
     """
-    main() with clear-recall flag should clear recall file.
+    main() with clear command should invoke clear_memory and clear_notepad.
     """
-    monkeypatch.setattr("sys.argv", ["cliff.py", "-cr"])
-    mock_file = mock_open()
-    with patch("builtins.open", mock_file):
-        main()
-    mock_file().write.assert_called_once_with("")
-    captured = capsys.readouterr()
-    assert "Cleared recalled commands" in captured.out
+    monkeypatch.setattr("sys.argv", ["cliff.py", "--clear"])
+    main()
+    mock_clear_memory.assert_called_once()
+    mock_clear_notepad.assert_called_once()
 
 
 # -- Tests for Command Generation -- #
@@ -211,70 +209,40 @@ def test_main_clear_recall(
 @patch("cliff.cliff.load_config")
 @patch("cliff.cliff.apply_config")
 @patch("cliff.cliff.load_memory")
-@patch("cliff.cliff.update_memory")
-@patch("l2m2.client.LLMClient.call")
-@patch("cliff.cliff.subprocess.run")
-@patch("l2m2.client.LLMClient.get_active_models")
-@patch("cliff.cliff.LoadingAnimation")
-@patch("builtins.open", new_callable=mock_open, read_data="man page content")
-def test_main_generate_command(
-    mock_file,
-    mock_loading,
-    mock_get_active_models,
-    mock_subprocess,
-    mock_llm_call,
-    mock_update_mem,
-    mock_load_mem,
-    mock_apply_config,
-    mock_load_config,
-    monkeypatch,
-):
-    """
-    main() with objective should generate and copy command.
-    """
-    mock_load_config.return_value = {
-        "default_model": "test-model",
-        "provider_credentials": {"test": "key"},
-    }
-    mock_get_active_models.return_value = ["test-model"]
-    mock_llm_call.return_value = '{"command": "ls -l"}'
-    mock_subprocess.return_value.stdout = "file1 file2"
-
-    monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
-
-    with patch("cliff.cliff.subprocess.run") as mock_pbcopy:
-        main()
-        mock_pbcopy.assert_any_call(["pbcopy"], input="ls -l", text=True)
-
-
-@patch("cliff.cliff.load_config")
-@patch("cliff.cliff.apply_config")
-@patch("cliff.cliff.load_memory")
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
-def test_main_no_active_models(
+def test_main_no_default_model(
     mock_get_active_models,
     mock_llm_call,
     mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
     capsys,
 ):
     """
-    main() with no active models should display welcome message.
+    main() should display help message and exit when no default model is set
+    and no model is specified via command line.
     """
-    mock_load_config.return_value = {"provider_credentials": {}}
-    mock_get_active_models.return_value = []
+    mock_load_config.return_value = {
+        "default_model": None,
+        "provider_credentials": {"test": "key"},
+        "memory_window": 10,
+        "timeout_seconds": 30,
+    }
+    mock_get_active_models.return_value = ["test-model"]
+
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
     with pytest.raises(SystemExit) as e:
         main()
 
     captured = capsys.readouterr()
-    assert "Welcome to Cliff" in captured.out
+    assert "It looks like you haven't yet set a default model." in captured.out
+
     assert e.value.code == 0
 
 
@@ -284,13 +252,91 @@ def test_main_no_active_models(
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
-def test_main_invalid_json_response(
+@patch("cliff.cliff.LoadingAnimation")
+@patch("builtins.open", new_callable=mock_open, read_data="man page content")
+def test_main_generate_command(
+    mock_file,
+    mock_loading,
+    mock_get_active_models,
+    mock_llm_call,
+    mock_update_mem,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    mock_pbcopy,
+    monkeypatch,
+):
+    """
+    main() with objective should generate and copy command.
+    """
+    mock_load_config.return_value = {
+        "default_model": "test-model",
+        "provider_credentials": {"test": "key"},
+        "memory_window": 10,
+        "timeout_seconds": 30,
+    }
+    mock_get_active_models.return_value = ["test-model"]
+    mock_llm_call.return_value = '{"command": "ls -l"}'
+
+    monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
+    main()
+    mock_pbcopy.assert_called_once_with(["pbcopy"], input="ls -l", text=True)
+
+
+@patch("cliff.cliff.load_config")
+@patch("cliff.cliff.apply_config")
+@patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
+@patch("l2m2.client.LLMClient.call")
+@patch("l2m2.client.LLMClient.get_active_models")
+@patch("cliff.cliff.resource_print")
+def test_main_no_active_models(
+    mock_resource_print,
     mock_get_active_models,
     mock_llm_call,
     mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
+    monkeypatch,
+    capsys,
+):
+    """
+    main() with no active models should display welcome message.
+    """
+    mock_load_config.return_value = {
+        "provider_credentials": {},
+        "timeout_seconds": 30,
+        "memory_window": 10,
+    }
+    mock_get_active_models.return_value = []
+    monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
+
+    with pytest.raises(SystemExit) as e:
+        main()
+
+    captured = capsys.readouterr()
+    assert "Welcome to Cliff! To get started," in captured.out
+    assert e.value.code == 0
+
+
+@patch("cliff.cliff.load_config")
+@patch("cliff.cliff.apply_config")
+@patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
+@patch("l2m2.client.LLMClient.call")
+@patch("l2m2.client.LLMClient.get_active_models")
+@patch("cliff.cliff.resource_print")
+def test_main_invalid_json_response(
+    mock_resource_print,
+    mock_get_active_models,
+    mock_llm_call,
+    mock_loading,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    mock_pbcopy,
     monkeypatch,
     capsys,
 ):
@@ -300,6 +346,8 @@ def test_main_invalid_json_response(
     mock_load_config.return_value = {
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
+        "timeout_seconds": 30,
+        "memory_window": 10,
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = "invalid json"
@@ -307,8 +355,9 @@ def test_main_invalid_json_response(
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
     main()
+
     captured = capsys.readouterr()
-    assert "bad or malformed response" in captured.out
+    assert "bad or malformed response." in captured.out
 
 
 @patch("cliff.cliff.load_config")
@@ -317,13 +366,16 @@ def test_main_invalid_json_response(
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
+@patch("cliff.cliff.resource_print")
 def test_main_bad_llm_response(
+    mock_resource_print,
     mock_get_active_models,
     mock_llm_call,
     mock_loading,
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
     capsys,
 ):
@@ -333,6 +385,8 @@ def test_main_bad_llm_response(
     mock_load_config.return_value = {
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
+        "timeout_seconds": 30,
+        "memory_window": 10,
     }
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = '{"some_other_key": "value"}'
@@ -340,8 +394,9 @@ def test_main_bad_llm_response(
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
     main()
+
     captured = capsys.readouterr()
-    assert "bad or malformed response" in captured.out
+    assert "bad or malformed response." in captured.out
 
 
 # -- Tests for Model Selection -- #
@@ -360,12 +415,18 @@ def test_main_specific_model(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
 ):
     """
     main() with model flag should use specified model.
     """
-    mock_load_config.return_value = {"provider_credentials": {"test": "key"}}
+    mock_load_config.return_value = {
+        "provider_credentials": {"test": "key"},
+        "default_model": "some-model",
+        "timeout_seconds": 30,
+        "memory_window": 10,
+    }
     mock_get_active_models.return_value = ["specific-model"]
     mock_llm_call.return_value = '{"command": "ls -l"}'
 
@@ -378,7 +439,7 @@ def test_main_specific_model(
     assert mock_llm_call.call_args[1]["model"] == "specific-model"
 
 
-def test_main_model_flag_without_model(monkeypatch):
+def test_main_model_flag_without_model(mock_pbcopy, monkeypatch):
     """
     main() with model flag but no model specified should exit with error.
     """
@@ -405,6 +466,7 @@ def test_main_llm_timeout(
     mock_load_mem,
     mock_apply_config,
     mock_load_config,
+    mock_pbcopy,
     monkeypatch,
     capsys,
 ):
@@ -414,11 +476,16 @@ def test_main_llm_timeout(
     mock_load_config.return_value = {
         "default_model": "test-model",
         "provider_credentials": {"test": "key"},
+        "timeout_seconds": 30,
+        "memory_window": 10,
     }
     mock_get_active_models.return_value = ["test-model"]
-    mock_llm_call.side_effect = TimeoutError("LLM timeout")
+    mock_llm_call.side_effect = LLMTimeoutError("LLM timeout")
 
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
-    with pytest.raises(TimeoutError):
+    with pytest.raises(SystemExit) as e:
         main()
+    captured = capsys.readouterr()
+    assert "LLM call timed out" in captured.out
+    assert e.value.code == 1

@@ -1,0 +1,3 @@
+Sorry, the LLM returned a bad or malformed response. If this persists,
+try clearing Cliff's memory with "cliff --memory clear", and if that
+still doesn't work, try switching to a different model.

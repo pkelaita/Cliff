@@ -7,65 +7,61 @@ from l2m2.client import LLMClient
 from l2m2.memory import ChatMemory
 from l2m2.tools import PromptLoader
 
+from l2m2.exceptions import LLMTimeoutError
+
+from cliff import __version__
+from cliff.config import (
+    apply_config,
+    load_config,
+    process_config_command,
+)
+from cliff.memory import (
+    process_memory_command,
+    load_memory,
+    update_memory,
+    clear_memory,
+)
+from cliff.notepad import (
+    process_notepad_command,
+    load_notepad,
+    clear_notepad,
+)
+from cliff.console import LoadingAnimation, cliff_print, resource_print
+
 HOME_DIR = os.path.expanduser("~")
 if not os.path.exists(os.path.join(HOME_DIR, ".cliff")):
     os.makedirs(os.path.join(HOME_DIR, ".cliff"))  # pragma: no cover
 
-if __name__ == "__main__":
-    from __init__ import __version__  # pragma: no cover
-    from config import (  # pragma: no cover
-        apply_config,
-        load_config,
-        process_config_command,
-        get_memory_window,
-    )
-    from memory import (
-        process_memory_command,
-        load_memory,
-        update_memory,
-    )  # pragma: no cover
-    from animations import LoadingAnimation  # pragma: no cover
-else:
-    from cliff import __version__
-    from cliff.config import (
-        apply_config,
-        load_config,
-        process_config_command,
-        get_memory_window,
-    )
-    from cliff.memory import process_memory_command, load_memory, update_memory
-    from cliff.animations import LoadingAnimation
-
-RECALL_FILE = os.path.join(HOME_DIR, ".cliff", "cliff_recall")
 DIR = os.path.dirname(os.path.abspath(__file__))
 MAN_PAGE = os.path.join(DIR, "resources", "man_page.txt")
+NO_ACTIVE_MODELS = os.path.join(DIR, "resources", "no_active_models.txt")
+AMBIGUOUS_MODEL = os.path.join(DIR, "resources", "ambiguous_model.txt")
+MALFORMED_RESPONSE = os.path.join(DIR, "resources", "malformed_response.txt")
 
 POSSIBLE_FLAGS = [
     "-v",
     "--version",
     "-m",
     "--model",
-    "-r",
-    "--recall",
-    "-sr",
-    "--show-recall",
-    "-cr",
-    "--clear-recall",
+    "-c",
     "--config",
     "--memory",
+    "-n",
+    "--notepad",
+    "--clear",
 ]
 
 CWD = os.getcwd()
-
-WINDOW_SIZE = get_memory_window()
 
 
 def main() -> None:
     # parse args
     args = sys.argv[1:]
     if len(args) == 0:
-        with open(MAN_PAGE, "r") as f:
-            print(f.read().replace("{{version}}", __version__))
+        resource_print(
+            MAN_PAGE,
+            lambda content: content.replace("{{version}}", __version__),
+        )
         return
 
     flags = []
@@ -77,90 +73,67 @@ def main() -> None:
             model_arg = args.pop(0)
 
     if model_arg is None and ("-m" in flags or "--model" in flags):
-        print("[Cliff] Usage: cliff --model [model] [objective]")
+        cliff_print("Usage: cliff --model [model] [objective]")
         sys.exit(1)
 
-    content = " ".join(args)
-    config_command = "--config" in flags
-    memory_command = "--memory" in flags
     view_version = "-v" in flags or "--version" in flags
-    store_recall = "-r" in flags or "--recall" in flags
-    show_recall = "-sr" in flags or "--show-recall" in flags
-    clear_recall = "-cr" in flags or "--clear-recall" in flags
+    config_command = "-c" in flags or "--config" in flags
+    memory_command = "--memory" in flags
+    notepad_command = "-n" in flags or "--notepad" in flags
+    clear_command = "--clear" in flags
+
+    # load config
+    config = load_config()
+    timeout = config["timeout_seconds"]
+    memory_window = config["memory_window"]
 
     # load memory
     mem = ChatMemory()
-    load_memory(mem, WINDOW_SIZE)
+    load_memory(mem, memory_window)
     llm = LLMClient(memory=mem)
 
     # apply config
-    config = load_config()
     apply_config(config, llm)
-
-    # load recall content
-    recall_content = ""
-    if os.path.exists(RECALL_FILE):
-        with open(RECALL_FILE, "r") as f:
-            recall_content = f.read()
-    else:
-        with open(RECALL_FILE, "w") as f:
-            f.write("")
 
     # Check for options
     if config_command:
         process_config_command(args, llm)
 
     elif memory_command:
-        process_memory_command(args, WINDOW_SIZE)
+        process_memory_command(args, memory_window)
+
+    elif notepad_command:
+        process_notepad_command(args)
+
+    elif clear_command:
+        clear_memory()
+        clear_notepad()
+        cliff_print("Cleared memory and notepad.")
 
     elif view_version:
-        print(f"[Cliff] Version {__version__}")
-
-    elif store_recall:
-        cmd_result = subprocess.run(content, shell=True, capture_output=True, text=True)
-        output = cmd_result.stdout + cmd_result.stderr
-        print(output, end="")
-
-        with open(RECALL_FILE, "a") as f:
-            s = f"{CWD} $ {content}\n{output}\n"
-            f.write(s)
-
-        print("[Cliff] Recalled this command and its output")
-
-    elif show_recall:
-        if recall_content == "":
-            print("[Cliff] No recalled commands.")
-        else:
-            print("[Cliff] Recalled commands:")
-            print(recall_content)
-
-    elif clear_recall:
-        with open(RECALL_FILE, "w") as f:
-            f.write("")
-        print("[Cliff] Cleared recalled commands.")
+        cliff_print(f"Version {__version__}")
 
     # Run standard generation
     else:
         if len(llm.get_active_models()) == 0:
-            print(
-                """[Cliff] Welcome to Cliff! To get started, please either connect to an LLM provider by typing
-                
-cliff --config add [provider] [api-key]
-                
-or connect to a local model in Ollama by typing
-                
-cliff --config add ollama [model]
-"""
-            )
+            with open(NO_ACTIVE_MODELS, "r") as f:
+                cliff_print(f.read())
+            sys.exit(0)
+
+        if config["default_model"] is None and model_arg is None:
+            with open(AMBIGUOUS_MODEL, "r") as f:
+                cliff_print(f.read())
             sys.exit(0)
 
         pl = PromptLoader(prompts_base_dir=os.path.join(DIR, "prompts"))
 
-        recall_prompt = ""
-        if recall_content != "":
-            recall_prompt = pl.load_prompt(
-                "recall.txt",
-                variables={"recall_content": recall_content},
+        # load notepad content
+        notepad_prompt = ""
+        notepad_content = load_notepad()
+        if notepad_content != "":
+            notepad_prompt = pl.load_prompt(
+                "notepad.txt",
+                variables={"notepad_content": notepad_content},
             )
 
         sysprompt = pl.load_prompt(
@@ -169,23 +142,29 @@ cliff --config add ollama [model]
                 "os_name": os.uname().sysname,
                 "os_version": os.uname().release,
                 "cwd": CWD,
-                "recall_prompt": recall_prompt,
+                "notepad_prompt": notepad_prompt,
             },
         )
 
         if model_arg is not None:
             model = model_arg
         else:
-            model = config["default_model"]
+            model = str(config["default_model"])
 
-        with LoadingAnimation():
-            result = llm.call(
-                model=model,
-                prompt=content,
-                system_prompt=sysprompt,
-                json_mode=True,
-                timeout=25,
+        try:
+            with LoadingAnimation():
+                result = llm.call(
+                    model=model,
+                    prompt=" ".join(args),
+                    system_prompt=sysprompt,
+                    json_mode=True,
+                    timeout=timeout,
+                )
+        except LLMTimeoutError:
+            cliff_print(
+                'LLM call timed out. Try increasing the timeout with "cliff --config timeout [seconds]"'
             )
+            sys.exit(1)
 
         valid = True
         try:
@@ -202,15 +181,12 @@ cliff --config add ollama [model]
         if valid:
             print(command)
             subprocess.run(["pbcopy"], input=command, text=True)
-            update_memory(mem, WINDOW_SIZE)
+            update_memory(mem, memory_window)
         else:
-            print(
-                """[Cliff] Sorry, the LLM returned a bad or malformed response. If this
-persists, try clearing Cliff's memory with cliff --memory clear, and
-if that still doesn't work, try switching to a different model."""
-            )
+            with open(MALFORMED_RESPONSE, "r") as f:
+                cliff_print(f.read())
 
 
 if __name__ == "__main__":  # pragma: no cover
-    print("[Cliff] dev mode")
+    cliff_print("dev mode")
     main()

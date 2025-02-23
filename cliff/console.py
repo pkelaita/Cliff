@@ -1,14 +1,20 @@
-from typing import List, Any, Optional, Type
+from typing import List, Any, Optional, Type, Callable
 import time
 import sys
 import threading
+import subprocess
+from rich.console import Console
 
-frames: List[str] = ["⠋ ", "⠙ ", "⠹ ", "⠸ ", "⠼ ", "⠴ ", "⠦ ", "⠧ ", "⠇ ", "⠏ "]
+loading_frames: List[str] = ["⠋ ", "⠙ ", "⠹ ", "⠸ ", "⠼ ", "⠴ ", "⠦ ", "⠧ ", "⠇ ", "⠏ "]
+
+console = Console()
 
 
-def _animate(stop_event: threading.Event, delay: float = 0.05) -> None:
+def _animate(
+    stop_event: threading.Event, delay: float = 0.05
+) -> None:  # pragma: no cover - would be flaky due to threading/timing
     while not stop_event.is_set():
-        for frame in frames:
+        for frame in loading_frames:
             if stop_event.is_set():
                 break
             sys.stdout.write("\r" + frame)
@@ -49,3 +55,20 @@ class LoadingAnimation:
         self.stop_event.set()
         if self.thread:
             self.thread.join()
+
+
+def cliff_print(message: str) -> None:
+    console.print("[cyan][Cliff][/cyan]", highlight=False, end=" ")
+    print(message)
+
+
+def resource_print(file_path: str, fn: Optional[Callable[[str], str]] = None) -> None:
+    with open(file_path, "r") as f:
+        content = f.read()
+        if fn:
+            content = fn(content)
+        subprocess.run(
+            ["less", "-R", "--no-init", "--quit-if-one-screen"],
+            input=content.encode(),
+            check=True,
+        )

@@ -4,6 +4,7 @@ import json
 
 from l2m2.memory import ChatMemory
 
+from cliff.console import cliff_print, console
 
 HOME_DIR = os.path.expanduser("~")
 MEMORY_FILE = os.path.join(HOME_DIR, ".cliff", "memory.json")
@@ -59,28 +60,31 @@ def show_memory(window_size: int) -> int:
         data = _truncate(data, window_size)
 
         if len(data) == 0:
-            print("[Cliff] Memory is empty.")
+            cliff_print("Memory is empty.")
             return 0
 
         for entry in data:
             if entry["role"] == "user":
-                print(f"User: {entry['content']}")
+                console.print("[magenta]User:[/magenta]", end="  ")
+                print(entry["content"])
             elif entry["role"] == "assistant":
                 content_data = json.loads(entry["content"])
-                print(f"Cliff: {content_data['command']}")
+                console.print("[cyan]Cliff:[/cyan]", end=" ")
+                print(content_data["command"])
                 if entry != data[-1]:
                     print()
+        print()
     return 0
 
 
 def process_memory_command(command: List[str], window_size: int) -> int:
     if len(command) == 0 or command[0] not in ("show", "clear"):
-        print("[Cliff] Usage: cliff --memory [show or clear]")
+        cliff_print("Usage: cliff --memory [show or clear]")
         return 1
 
     if command[0] == "clear":
         clear_memory()
-        print("[Cliff] Cleared memory.")
+        cliff_print("Cleared memory.")
         return 0
 
     else:  # show
