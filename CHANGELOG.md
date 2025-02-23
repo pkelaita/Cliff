@@ -1,8 +1,14 @@
 # Changelog
 
-_Current version: 0.2.0_
+_Current version: 0.2.1_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+## 0.2.1 - February 23, 2025
+
+#### Fixed
+
+- Fixed an issue where man pages were being improperly indented.
 
 ### 0.2.0 - February 22, 2025
 
