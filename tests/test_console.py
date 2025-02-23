@@ -117,7 +117,9 @@ def test_resource_print(mock_subprocess_run, mock_file):
 
     mock_file.assert_called_once_with("test_file.txt", "r")
     mock_subprocess_run.assert_called_once_with(
-        ["less", "-R", "-X", "-J", "-F"], input="test content".encode(), check=True
+        ["less", "-R", "--no-init", "--quit-if-one-screen"],
+        input="test content".encode(),
+        check=True,
     )
 
 
@@ -130,5 +132,7 @@ def test_resource_print_with_fn(mock_subprocess_run, mock_file):
 
     mock_file.assert_called_once_with("test_file.txt", "r")
     mock_subprocess_run.assert_called_once_with(
-        ["less", "-R", "-X", "-J", "-F"], input="TEST CONTENT".encode(), check=True
+        ["less", "-R", "--no-init", "--quit-if-one-screen"],
+        input="TEST CONTENT".encode(),
+        check=True,
     )

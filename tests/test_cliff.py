@@ -212,9 +212,7 @@ def test_main_clear_command(
 @patch("cliff.cliff.LoadingAnimation")
 @patch("l2m2.client.LLMClient.call")
 @patch("l2m2.client.LLMClient.get_active_models")
-@patch("cliff.cliff.resource_print")
 def test_main_no_default_model(
-    mock_resource_print,
     mock_get_active_models,
     mock_llm_call,
     mock_loading,
@@ -223,6 +221,7 @@ def test_main_no_default_model(
     mock_load_config,
     mock_pbcopy,
     monkeypatch,
+    capsys,
 ):
     """
     main() should display help message and exit when no default model is set
@@ -241,9 +240,9 @@ def test_main_no_default_model(
     with pytest.raises(SystemExit) as e:
         main()
 
-    mock_resource_print.assert_called_once()
-    called_path = mock_resource_print.call_args[0][0]
-    assert called_path.endswith("resources/ambiguous_model.txt")
+    captured = capsys.readouterr()
+    assert "It looks like you haven't yet set a default model." in captured.out
+
     assert e.value.code == 0
 
 
@@ -301,6 +300,7 @@ def test_main_no_active_models(
     mock_load_config,
     mock_pbcopy,
     monkeypatch,
+    capsys,
 ):
     """
     main() with no active models should display welcome message.
@@ -316,9 +316,8 @@ def test_main_no_active_models(
     with pytest.raises(SystemExit) as e:
         main()
 
-    mock_resource_print.assert_called_once()
-    called_path = mock_resource_print.call_args[0][0]
-    assert called_path.endswith("resources/no_active_models.txt")
+    captured = capsys.readouterr()
+    assert "Welcome to Cliff! To get started," in captured.out
     assert e.value.code == 0
 
 
@@ -339,6 +338,7 @@ def test_main_invalid_json_response(
     mock_load_config,
     mock_pbcopy,
     monkeypatch,
+    capsys,
 ):
     """
     main() should handle invalid JSON response from LLM.
@@ -355,9 +355,9 @@ def test_main_invalid_json_response(
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
     main()
-    mock_resource_print.assert_called_once()
-    called_path = mock_resource_print.call_args[0][0]
-    assert called_path.endswith("resources/malformed_response.txt")
+
+    captured = capsys.readouterr()
+    assert "bad or malformed response." in captured.out
 
 
 @patch("cliff.cliff.load_config")
@@ -377,6 +377,7 @@ def test_main_bad_llm_response(
     mock_load_config,
     mock_pbcopy,
     monkeypatch,
+    capsys,
 ):
     """
     main() should handle LLM response missing 'command' key.
@@ -393,9 +394,9 @@ def test_main_bad_llm_response(
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
     main()
-    mock_resource_print.assert_called_once()
-    called_path = mock_resource_print.call_args[0][0]
-    assert called_path.endswith("resources/malformed_response.txt")
+
+    captured = capsys.readouterr()
+    assert "bad or malformed response." in captured.out
 
 
 # -- Tests for Model Selection -- #

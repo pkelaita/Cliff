@@ -116,11 +116,13 @@ def main() -> None:
     # Run standard generation
     else:
         if len(llm.get_active_models()) == 0:
-            resource_print(NO_ACTIVE_MODELS)
+            with open(NO_ACTIVE_MODELS, "r") as f:
+                cliff_print(f.read())
             sys.exit(0)
 
         if config["default_model"] is None and model_arg is None:
-            resource_print(AMBIGUOUS_MODEL)
+            with open(AMBIGUOUS_MODEL, "r") as f:
+                cliff_print(f.read())
             sys.exit(0)
 
         pl = PromptLoader(prompts_base_dir=os.path.join(DIR, "prompts"))
@@ -181,7 +183,8 @@ def main() -> None:
             subprocess.run(["pbcopy"], input=command, text=True)
             update_memory(mem, memory_window)
         else:
-            resource_print(MALFORMED_RESPONSE)
+            with open(MALFORMED_RESPONSE, "r") as f:
+                cliff_print(f.read())
 
 
 if __name__ == "__main__":  # pragma: no cover

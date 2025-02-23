@@ -68,5 +68,7 @@ def resource_print(file_path: str, fn: Optional[Callable[[str], str]] = None) ->
         if fn:
             content = fn(content)
         subprocess.run(
-            ["less", "-R", "-X", "-J", "-F"], input=content.encode(), check=True
+            ["less", "-R", "--no-init", "--quit-if-one-screen"],
+            input=content.encode(),
+            check=True,
         )
