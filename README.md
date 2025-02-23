@@ -4,14 +4,7 @@
 
 Cliff (**C**ommand **L**ine **I**nter**F**ace **F**riend) is an AI assistant that helps you come up with Unix commands. Given an objective (for example, "kill the process running on port 8080"), Cliff will generate a command that does the objective and add it to your paste buffer for you to easily paste into your terminal.
 
-```bash
-MacBookPro:~ $ cliff list my files and their sizes in KB, descending by size
-ls -lS | awk '$5 > 0 {printf "%-20s %8.2f KB\n", $9, $5/1024}'
-MacBookPro:~ $ ls -lS | awk '$5 > 0 {printf "%-20s %8.2f KB\n", $9, $5/1024}'
-foo.txt                 10.29 KB
-bar.txt                  5.28 KB
-baz.txt                  2.61 KB
-```
+![demo](https://i.imgur.com/uer28Mi.gif)
 
 Cliff is compatible with LLMs from OpenAI, Anthropic, etc. as well as local models running with Ollama.
 
@@ -40,6 +33,8 @@ Or with pip:
 ```bash
 pip install cliff-cli
 ```
+
+If installing with pip, it's recommended to use [pipx](https://pipx.pypa.io/stable/) or another isolated environment manager since Cliff is a globally-installed application.
 
 ## Configuration
 
