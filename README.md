@@ -106,6 +106,7 @@ _Tip:_ You'll usually have to put quotes around your command if it contains spec
 ### Other Useful Features
 
 - The default generation timeout is 20 seconds. You can change it by running `cliff --config timeout [new timeout]`.
+- To view your configuration, run `cliff --config show`.
 - You can run `cliff --clear` as a shortcut to clear both Cliff's chat memory and command notepad.
 
 That's it! It's pretty simple which is the point.
