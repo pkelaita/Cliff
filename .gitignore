@@ -11,6 +11,7 @@ __pycache__/
 .mypy_cache/
 build/
 dist/
+coverage.xml
 
 # A shortcut for `python -m cliff.cliff $@` for easier development
 /dev
