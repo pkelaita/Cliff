@@ -32,8 +32,7 @@ It's annoying having to open the browser when I forget how to do something in th
 You can install Cliff with homebrew:
 
 ```bash
-brew tap pkelaita/cliff
-brew install cliff
+brew install pkelaita/tap/cliff
 ```
 
 Or with pip:
