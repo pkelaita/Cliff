@@ -3,7 +3,7 @@
 
 VERSION := $(shell python -c "from cliff import __version__; print(__version__)")
 
-default: lint typecheck test
+default: lint type test
 
 init:
 	uv pip install --upgrade pip
@@ -27,7 +27,7 @@ coverage:
 lint:
 	-ruff check .
 
-typecheck:
+type:
 	-mypy .
 
 build:
