@@ -1,9 +1,0 @@
-tox
-pytest
-pytest-cov
-wheel
-twine
-setuptools
-build
-ruff
-mypy

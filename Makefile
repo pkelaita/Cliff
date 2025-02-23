@@ -1,40 +1,38 @@
 .PHONY: *
 .DEFAULT_GOAL := default
 
-VERSION := $(shell python -c "from cliff import __version__; print(__version__)")
+VERSION := $(shell uv run python -c "from cliff import __version__; print(__version__)")
 
 default: lint type test
 
 init:
-	uv pip install --upgrade pip
-	uv pip install -r requirements.txt
-	uv pip install -r requirements-dev.txt
+	uv sync
 
 test:
-	pytest -v --cov=cliff --cov-report=term-missing --failed-first --durations=0
+	uv run pytest -v --cov=cliff --cov-report=term-missing --failed-first --durations=0
 
 tox:
-	tox -p auto
+	uv run tox -p auto
 
 clear-deps:
-	uv pip uninstall -y cliff > /dev/null 2>&1
-	uv pip freeze | xargs uv pip uninstall -y > /dev/null
+	@uv pip uninstall cliff > /dev/null 2>&1
+	@uv pip freeze | xargs uv pip uninstall > /dev/null
 
 coverage:
-	pytest --cov=cliff --cov-report=html
+	uv run pytest --cov=cliff --cov-report=html
 	open htmlcov/index.html
 
 lint:
-	-ruff check .
+	-uv run ruff check .
 
 type:
-	-mypy .
+	-uv run mypy .
 
 build:
-	python -m build
+	uv build
 
 update-build: build
-	uv pip uninstall -y cliff-cli
+	uv pip uninstall cliff-cli
 	uv pip install .
 
 clean:
@@ -49,4 +47,4 @@ clean:
 	@find . -type d -name __pycache__ -exec rm -r {} +
 
 publish: clean build
-	twine upload dist/*
+	uv run twine upload dist/*
