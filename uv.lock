@@ -196,7 +196,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "l2m2", specifier = "==0.0.43" },
+    { name = "l2m2", specifier = "==0.0.44" },
     { name = "rich", specifier = "==13.9.4" },
 ]
 
@@ -507,14 +507,14 @@ wheels = [
 
 [[package]]
 name = "l2m2"
-version = "0.0.43"
+version = "0.0.44"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/dc/b2/2c24bd394881e32ce1989aa1206a584b2b62e78b70bbcf71ba2a485f5bc2/l2m2-0.0.43.tar.gz", hash = "sha256:3e5aea0f4704f8ce9f18f12ed74bd728c78a64739e88f3a06a9746dc45140d56", size = 22956 }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/5b/e9086b3821285bc38112aae9070891f53d692180dcc089e676b508210cd6/l2m2-0.0.44.tar.gz", hash = "sha256:ff0b0136ffb1e13082e19d42b395d420ef61fa09ef7b68d1c152b81aa5030bdd", size = 22589 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/41/cc/3d83b40db43431f4275e0d375da2bcc1fd21e05f5aa80ea1f96b925a68b8/l2m2-0.0.43-py3-none-any.whl", hash = "sha256:273683557e60c9c0036b0d800cddafcf1596c5b2a12544c3557cc7551385d426", size = 24414 },
+    { url = "https://files.pythonhosted.org/packages/41/72/54c19da4e9dc78b0166e24336036c811241d239b569adb1abc447a6e87cd/l2m2-0.0.44-py3-none-any.whl", hash = "sha256:8fcc6dee1e0d403ec2dc1d5d853d67f42de75a7ed187b514179aa70f4563bc78", size = 24240 },
 ]
 
 [[package]]
