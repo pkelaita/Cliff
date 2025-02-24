@@ -127,7 +127,6 @@ def main() -> None:
 
         pl = PromptLoader(prompts_base_dir=os.path.join(DIR, "prompts"))
 
-        # load notepad content
         notepad_prompt = ""
         notepad_content = load_notepad()
         if notepad_content != "":
