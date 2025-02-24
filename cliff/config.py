@@ -56,6 +56,9 @@ DEFAULT_CONFIG: Config = {
 }
 
 
+# -- Config Management -- #
+
+
 def save_config(config: Config) -> None:
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=4)
@@ -89,9 +92,55 @@ def apply_config(config: Config, llm: LLMClient) -> None:
         llm.add_local_model(model, "ollama")
 
 
-def add_provider(provider: str, api_key: str) -> int:
+# -- Validators -- #
+
+
+def validate_provider(provider: str) -> bool:
     if provider not in HOSTED_PROVIDERS:
         cliff_print(f"Invalid provider: {provider}")
+        return False
+    return True
+
+
+def validate_model(model: str, llm: LLMClient) -> bool:
+    active_models = llm.get_active_models()
+    if model not in active_models:
+        cliff_print(f"Model {model} not found")
+        return False
+    return True
+
+
+def validate_timeout(value: str) -> bool:
+    error_msg = "Timeout must be a positive integer"
+    try:
+        int_value = int(value)
+    except ValueError:
+        cliff_print(error_msg)
+        return False
+    if int_value <= 0:
+        cliff_print(error_msg)
+        return False
+    return True
+
+
+def validate_memory_window(value: str) -> bool:
+    error_msg = "Memory window must be a non-negative integer"
+    try:
+        int_value = int(value)
+    except ValueError:
+        cliff_print(error_msg)
+        return False
+    if int_value < 0:
+        cliff_print(error_msg)
+        return False
+    return True
+
+
+# -- Add/Update Functions -- #
+
+
+def add_provider(provider: str, api_key: str) -> int:
+    if not validate_provider(provider):
         return 1
 
     config = load_config()
@@ -112,7 +161,7 @@ def add_provider(provider: str, api_key: str) -> int:
         return 0
 
 
-def add_ollama(model: str) -> int:
+def add_ollama_model(model: str) -> int:
     config = load_config()
     config["ollama_models"].append(model)
     if config["default_model"] is None:
@@ -122,15 +171,56 @@ def add_ollama(model: str) -> int:
     return 0
 
 
-def remove_ollama(model: str) -> int:
-    config = load_config()
-    if model not in config["ollama_models"]:
-        cliff_print(f"local model {model} not found")
+def set_default_model(model: str, llm: LLMClient) -> int:
+    if not validate_model(model, llm):
         return 1
-    config["ollama_models"].remove(model)
+
+    config = load_config()
+    config["default_model"] = model
     save_config(config)
-    cliff_print(f"Removed local model {model}")
+
+    cliff_print(f"Set default model to {model}")
     return 0
+
+
+def prefer_add(model: str, provider: str, llm: LLMClient) -> int:
+    # TODO get the provider mappying from l2m2 for further validation
+
+    if not validate_model(model, llm):
+        return 1
+    if not validate_provider(provider):
+        return 1
+
+    config = load_config()
+    config["preferred_providers"][model] = provider
+    save_config(config)
+    cliff_print(f"Added preferred provider {provider} for {model}")
+    return 0
+
+
+def update_memory_window(window: str) -> int:
+    if not validate_memory_window(window):
+        return 1
+
+    config = load_config()
+    config["memory_window"] = int(window)
+    save_config(config)
+    cliff_print(f"Updated memory window size to {window}")
+    return 0
+
+
+def update_timeout(timeout: str) -> int:
+    if not validate_timeout(timeout):
+        return 1
+
+    config = load_config()
+    config["timeout_seconds"] = int(timeout)
+    save_config(config)
+    cliff_print(f"Updated timeout to {timeout} seconds")
+    return 0
+
+
+# -- Remove Functions -- #
 
 
 def remove_provider(provider: str) -> int:
@@ -150,25 +240,14 @@ def remove_provider(provider: str) -> int:
     return 0
 
 
-def set_default_model(model: str, llm: LLMClient) -> int:
-    active_models = llm.get_active_models()
-    if model not in active_models:
-        cliff_print(f"Model {model} not found")
+def remove_ollama_model(model: str) -> int:
+    config = load_config()
+    if model not in config["ollama_models"]:
+        cliff_print(f"local model {model} not found")
         return 1
-
-    config = load_config()
-    config["default_model"] = model
+    config["ollama_models"].remove(model)
     save_config(config)
-
-    cliff_print(f"Set default model to {model}")
-    return 0
-
-
-def prefer_add(model: str, provider: str) -> int:
-    config = load_config()
-    config["preferred_providers"][model] = provider
-    save_config(config)
-    cliff_print(f"Added preferred provider {provider} for {model}")
+    cliff_print(f"Removed local model {model}")
     return 0
 
 
@@ -177,26 +256,14 @@ def prefer_remove(model: str) -> int:
     if model not in config["preferred_providers"]:
         cliff_print(f"Preferred provider for {model} not found")
         return 1
+
     del config["preferred_providers"][model]
     save_config(config)
     cliff_print(f"Removed preferred provider for {model}")
     return 0
 
 
-def update_memory_window(window: int) -> int:
-    config = load_config()
-    config["memory_window"] = window
-    save_config(config)
-    cliff_print(f"Updated memory window size to {window}")
-    return 0
-
-
-def update_timeout(timeout: int) -> int:
-    config = load_config()
-    config["timeout_seconds"] = timeout
-    save_config(config)
-    cliff_print(f"Updated timeout to {timeout} seconds")
-    return 0
+# -- Misc Functionality -- #
 
 
 def reset_config() -> int:
@@ -275,7 +342,7 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
             cliff_print("Usage: add [provider] [api-key] or add ollama [model]")
             return 1
         if command[1] == "ollama":
-            return add_ollama(command[2])
+            return add_ollama_model(command[2])
         else:
             return add_provider(command[1], command[2])
 
@@ -287,7 +354,7 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
             if len(command) != 3:
                 cliff_print("Usage: remove ollama [model]")
                 return 1
-            return remove_ollama(command[2])
+            return remove_ollama_model(command[2])
         else:
             return remove_provider(command[1])
 
@@ -304,19 +371,19 @@ def process_config_command(command: List[str], llm: LLMClient) -> int:
         if command[1] == "remove":
             return prefer_remove(command[2])
         else:
-            return prefer_add(command[1], command[2])
+            return prefer_add(command[1], command[2], llm)
 
     elif command[0] == "memory-window":
         if len(command) != 2:
             cliff_print("Usage: memory-window [window-size]")
             return 1
-        return update_memory_window(int(command[1]))
+        return update_memory_window(command[1])
 
     elif command[0] == "timeout":
         if len(command) != 2:
             cliff_print("Usage: timeout [seconds]")
             return 1
-        return update_timeout(int(command[1]))
+        return update_timeout(command[1])
 
     elif command[0] == "reset":
         return reset_config()

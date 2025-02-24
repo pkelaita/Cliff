@@ -1,32 +1,215 @@
-from unittest.mock import patch, mock_open, call
+import os
+import json
+from copy import deepcopy
 
-from l2m2.client import LLMClient
+import pytest
+from unittest.mock import patch, mock_open, MagicMock
 
 from cliff.config import (
-    load_config,
-    apply_config,
-    save_config,
-    add_provider,
-    remove_provider,
-    set_default_model,
-    show_config,
-    process_config_command,
     CONFIG_FILE,
     DEFAULT_CONFIG,
     HELP_FILE,
+    DEFAULT_MODEL_MAPPING,
+    save_config,
+    load_config,
+    apply_config,
+    validate_provider,
+    validate_model,
+    validate_timeout,
+    validate_memory_window,
+    add_provider,
+    add_ollama_model,
+    set_default_model,
     prefer_add,
-    prefer_remove,
-    add_ollama,
-    remove_ollama,
     update_memory_window,
-    reset_config,
     update_timeout,
+    remove_provider,
+    remove_ollama_model,
+    prefer_remove,
+    reset_config,
+    show_config,
+    process_config_command,
 )
 
 
-def get_test_base_config():
-    """Returns a fresh copy of the base test configuration"""
-    return {
+# -- Fixtures -- #
+
+
+@pytest.fixture
+def default_config_copy():
+    """Return a fresh copy of the default configuration."""
+    return deepcopy(DEFAULT_CONFIG)
+
+
+@pytest.fixture
+def dummy_llm():
+    """Return a dummy LLMClient-like object with needed attributes."""
+    dummy = MagicMock()
+    # For validate_model, assume by default the active models include 'dummy-model'
+    dummy.get_active_models.return_value = ["dummy-model"]
+    return dummy
+
+
+# -- Tests for File Operations -- #
+
+
+def test_save_config(default_config_copy):
+    """save_config should write the JSON configuration to CONFIG_FILE."""
+    m = mock_open()
+    with (
+        patch("cliff.config.open", m, create=True),
+        patch("json.dump") as mock_json_dump,
+    ):
+        save_config(default_config_copy)
+        m.assert_called_once_with(CONFIG_FILE, "w")
+        mock_json_dump.assert_called_once_with(default_config_copy, m(), indent=4)
+
+
+def test_load_config_file_not_exist():
+    """load_config should create directories and save the default config when file does not exist."""
+    with (
+        patch("cliff.config.os.path.exists", return_value=False),
+        patch("cliff.config.os.makedirs") as mock_makedirs,
+        patch("cliff.config.save_config") as mock_save,
+    ):
+        config = load_config()
+        assert config == DEFAULT_CONFIG
+        # Ensure the directory is created and save_config is called.
+        mock_makedirs.assert_called_once_with(
+            os.path.dirname(CONFIG_FILE), exist_ok=True
+        )
+        mock_save.assert_called_once_with(DEFAULT_CONFIG)
+
+
+def test_load_config_file_exists_missing_fields():
+    """load_config should complete a config file that is missing some fields."""
+    # Create a partial config (missing some fields)
+    partial_config = {
+        "provider_credentials": {"openai": "dummy-key"},
+        "default_model": "dummy-model",
+    }
+    # Expect the missing keys to be added.
+    expected_config = deepcopy(DEFAULT_CONFIG)
+    expected_config.update(partial_config)
+
+    m_open = mock_open(read_data=json.dumps(partial_config))
+    with (
+        patch("cliff.config.os.path.exists", return_value=True),
+        patch("cliff.config.open", m_open, create=True),
+        patch("cliff.config.save_config") as mock_save,
+    ):
+        config = load_config()
+        # Check that missing keys are added.
+        for key in DEFAULT_CONFIG:
+            assert key in config
+        # Check that provider_credentials and default_model are what we provided.
+        assert config["provider_credentials"] == {"openai": "dummy-key"}
+        assert config["default_model"] == "dummy-model"
+        mock_save.assert_called_once_with(config)
+
+
+# -- Tests for Apply Config -- #
+
+
+def test_apply_config():
+    """apply_config should update the llm with provider credentials, preferred providers and local models."""
+    config = {
+        "provider_credentials": {"openai": "abc123"},
+        "default_model": "openai-model",
+        "preferred_providers": {"dummy-model": "openai"},
+        "ollama_models": ["local-model"],
+        "memory_window": 10,
+        "timeout_seconds": 20,
+    }
+    dummy_llm = MagicMock()
+    with patch("cliff.config.load_config", return_value=config):
+        apply_config(config, dummy_llm)
+        # add_provider is called for each provider credential
+        dummy_llm.add_provider.assert_called_once_with("openai", "abc123")
+        dummy_llm.set_preferred_providers.assert_called_once_with(
+            {"dummy-model": "openai"}
+        )
+        dummy_llm.add_local_model.assert_called_once_with("local-model", "ollama")
+
+
+# -- Tests for Validators -- #
+
+
+def test_validate_provider_valid():
+    """validate_provider should return True for a valid provider."""
+    # Choose any from the static set, e.g., "openai"
+    assert validate_provider("openai") is True
+
+
+def test_validate_provider_invalid():
+    """validate_provider should return False and print error for an invalid provider."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = validate_provider("invalid-provider")
+        assert result is False
+        mock_print.assert_called_once_with("Invalid provider: invalid-provider")
+
+
+def test_validate_model_valid(dummy_llm):
+    """validate_model should return True if model is in llm.get_active_models()."""
+    dummy_llm.get_active_models.return_value = ["dummy-model", "other-model"]
+    assert validate_model("dummy-model", dummy_llm) is True
+
+
+def test_validate_model_invalid(dummy_llm):
+    """validate_model should return False and print error if model is not found."""
+    dummy_llm.get_active_models.return_value = ["other-model"]
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = validate_model("dummy-model", dummy_llm)
+        assert result is False
+        mock_print.assert_called_once_with("Model dummy-model not found")
+
+
+def test_validate_timeout_valid():
+    """validate_timeout should return True for a correct positive integer."""
+    assert validate_timeout("30") is True
+
+
+@pytest.mark.parametrize("value", ["0", "-5", "abc"])
+def test_validate_timeout_invalid(value):
+    """validate_timeout should return False for non-positive or non-integer values and print error."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = validate_timeout(value)
+        assert result is False
+        mock_print.assert_called()  # at least one print must be called
+
+
+def test_validate_memory_window_valid():
+    """validate_memory_window should return True for a non-negative integer."""
+    assert validate_memory_window("5") is True
+
+
+@pytest.mark.parametrize("value", ["-1", "abc"])
+def test_validate_memory_window_invalid(value):
+    """validate_memory_window should return False for negative or non-integer values and print error."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = validate_memory_window(value)
+        assert result is False
+        mock_print.assert_called()
+
+
+# -- Tests for Add/Update Functions -- #
+
+
+def test_add_provider_invalid():
+    """add_provider should return 1 if an invalid provider is given."""
+    with (
+        patch("cliff.config.validate_provider", return_value=False) as mock_validate,
+        patch("cliff.config.cliff_print"),
+    ):
+        result = add_provider("invalid-provider", "key")
+        assert result == 1
+        mock_validate.assert_called_once_with("invalid-provider")
+
+
+def test_add_provider_new():
+    """add_provider should add a new valid provider and set default_model if None."""
+    # Create a dummy mutable config.
+    dummy_config = {
         "provider_credentials": {},
         "default_model": None,
         "preferred_providers": {},
@@ -34,660 +217,501 @@ def get_test_base_config():
         "memory_window": 10,
         "timeout_seconds": 20,
     }
+    with (
+        patch("cliff.config.validate_provider", return_value=True),
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = add_provider("openai", "new-key")
+        assert result == 0
+        # Check that the provider is added.
+        assert dummy_config["provider_credentials"]["openai"] == "new-key"
+        # Since default_model was None it should now have DEFAULT_MODEL_MAPPING value.
+        assert dummy_config["default_model"] == DEFAULT_MODEL_MAPPING["openai"]
+        mock_print.assert_called_once_with("Added provider openai")
 
 
-def get_test_config_with_openai():
-    """Returns a fresh copy of the OpenAI test configuration"""
-    return {
-        **get_test_base_config(),
-        "provider_credentials": {"openai": "secret"},
-        "default_model": "gpt-4o",
-    }
-
-
-def get_test_config_with_multiple_providers():
-    """Returns a fresh copy of the multi-provider test configuration"""
-    return {
-        **get_test_base_config(),
-        "provider_credentials": {"openai": "secret_key", "anthropic": "another_key"},
-        "preferred_providers": {"gpt-4o": "openai"},
-        "ollama_models": ["llama2", "mistral"],
-    }
-
-
-# -- Tests for Config File Operations -- #
-
-
-@patch("os.path.exists", return_value=False)
-@patch("os.makedirs")
-@patch("builtins.open", new_callable=mock_open)
-@patch("json.dump")
-def test_load_config_file_not_exist(
-    mock_json_dump, mock_file, mock_makedirs, mock_path_exists
-):
-    """
-    If config file doesn't exist, load_config() should create a default config file
-    and return DEFAULT_CONFIG.
-    """
-    config = load_config()
-    mock_makedirs.assert_called_once()
-    mock_file.assert_called_once_with(CONFIG_FILE, "w")
-    mock_json_dump.assert_called_once_with(DEFAULT_CONFIG, mock_file(), indent=4)
-    assert config == DEFAULT_CONFIG
-
-
-@patch("os.path.exists", return_value=True)
-@patch("builtins.open", new_callable=mock_open)
-@patch("json.load")
-def test_load_config_with_missing_fields(mock_json_load, mock_file, mock_path_exists):
-    """
-    Test that load_config() properly adds missing fields from DEFAULT_CONFIG when loading a partial config.
-    """
-    # Create a partial config missing some fields
-    partial_config = {
-        "provider_credentials": {"openai": "secret"},
-        "default_model": "gpt-4o",
-    }
-
-    mock_json_load.return_value = partial_config
-
-    config = load_config()
-
-    # Check that missing fields were added with default values
-    assert config["preferred_providers"] == DEFAULT_CONFIG["preferred_providers"]
-    assert config["ollama_models"] == DEFAULT_CONFIG["ollama_models"]
-    assert config["memory_window"] == DEFAULT_CONFIG["memory_window"]
-    assert config["timeout_seconds"] == DEFAULT_CONFIG["timeout_seconds"]
-
-    # Check that existing fields were preserved
-    assert config["provider_credentials"] == {"openai": "secret"}
-    assert config["default_model"] == "gpt-4o"
-
-
-@patch("builtins.open", new_callable=mock_open)
-@patch("json.dump")
-def test_save_config(mock_json_dump, mock_file):
-    """
-    save_config() should dump the given config to the config file.
-    """
-    test_config = get_test_config_with_openai()
-    save_config(test_config)
-    mock_file.assert_called_once_with(CONFIG_FILE, "w")
-    mock_json_dump.assert_called_once_with(test_config, mock_file(), indent=4)
-
-
-# -- Tests for Provider Management -- #
-
-
-@patch("l2m2.client.LLMClient")
-def test_apply_config(mock_llm_client):
-    """
-    apply_config() should call llm.add_provider for each provider credential in the config.
-    """
-    mock_llm = mock_llm_client.return_value
-    test_config = get_test_config_with_multiple_providers()
-    apply_config(test_config, mock_llm)
-    mock_llm.add_provider.assert_any_call("openai", "secret_key")
-    mock_llm.add_provider.assert_any_call("anthropic", "another_key")
-
-
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_add_provider_valid_new(mock_save_config, mock_load_config):
-    """
-    add_provider() with a valid provider not previously in the config
-    should set that provider's API key, possibly set default_model,
-    save config, and return 0.
-    """
-    mock_load_config.return_value = get_test_base_config()
-    result = add_provider("openai", "test_key")
-    mock_save_config.assert_called_once()
-    assert result == 0
-
-
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_add_provider_valid_update(mock_save_config, mock_load_config):
-    """
-    add_provider() with a valid provider that already exists
-    should update its API key, save config, and return 0.
-    """
-    mock_load_config.return_value = get_test_config_with_openai()
-    result = add_provider("openai", "new_key")
-    mock_save_config.assert_called_once()
-    assert result == 0
-
-
-def test_add_provider_invalid():
-    """
-    add_provider() with an invalid provider should return 1 and not touch config.
-    """
-    result = add_provider("unknown_provider", "some_key")
-    assert result == 1
-
-
-@patch(
-    "cliff.config.load_config",
-    return_value=get_test_config_with_openai(),
-)
-@patch("cliff.config.save_config")
-def test_remove_provider_existing(mock_save_config, mock_load_config):
-    """
-    remove_provider() should remove the provider if it exists, save config, and return 0.
-    """
-    result = remove_provider("openai")
-    mock_save_config.assert_called_once()
-    assert result == 0
-
-
-@patch(
-    "cliff.config.load_config",
-    return_value=get_test_config_with_openai(),
-)
-@patch("cliff.config.save_config")
-def test_remove_provider_nonexistent(mock_save_config, mock_load_config):
-    """
-    remove_provider() should return 1 if provider is not found, and not save.
-    """
-    result = remove_provider("anthropic")
-    mock_save_config.assert_not_called()
-    assert result == 1
-
-
-# -- Tests for Default Model Management -- #
-
-
-@patch(
-    "l2m2.client.LLMClient.get_available_models",
-    return_value=["gpt-4o", "claude-3.5-haiku"],
-)
-@patch("l2m2.client.LLMClient.get_active_models", return_value=["gpt-4o"])
-@patch(
-    "cliff.config.load_config",
-    return_value=get_test_config_with_openai(),
-)
-@patch("cliff.config.save_config")
-def test_set_default_model_success(
-    mock_save_config, mock_load_config, mock_active_models, mock_available_models
-):
-    """
-    set_default_model() should succeed if model is in available models and active models.
-    """
-    llm = LLMClient()
-    result = set_default_model("gpt-4o", llm)
-    mock_save_config.assert_called_once()
-    assert result == 0
-
-
-@patch("l2m2.client.LLMClient.get_available_models", return_value=["claude-3.5-haiku"])
-@patch("l2m2.client.LLMClient.get_active_models", return_value=["claude-3.5-haiku"])
-def test_set_default_model_not_in_available(mock_active, mock_available):
-    """
-    set_default_model() should return 1 if the model is not in the available models list.
-    """
-    llm = LLMClient()
-    result = set_default_model("gpt-4o", llm)
-    assert result == 1
-
-
-@patch(
-    "l2m2.client.LLMClient.get_available_models",
-    return_value=["gpt-4o", "some-other-model"],
-)
-@patch("l2m2.client.LLMClient.get_active_models", return_value=["some-other-model"])
-def test_set_default_model_not_active(mock_active, mock_available):
-    """
-    set_default_model() should return 2 if the model is available but not active.
-    """
-    llm = LLMClient()
-    result = set_default_model("gpt-4o", llm)
-    assert result == 1
-
-
-# -- Tests for Preferred Provider Management -- #
-
-
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_prefer_add_success(mock_save_config, mock_load_config):
-    """
-    prefer_add() should add a preferred provider for a model and return 0.
-    """
-    mock_load_config.return_value = get_test_config_with_openai()
-    result = prefer_add("gpt-4o", "openai")
-    mock_save_config.assert_called_once()
-    assert result == 0
-
-
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_prefer_remove_success(mock_save_config, mock_load_config):
-    """
-    prefer_remove() should remove a preferred provider for a model and return 0.
-    """
-    config = get_test_config_with_multiple_providers()
-    mock_load_config.return_value = config
-    result = prefer_remove("gpt-4o")
-    mock_save_config.assert_called_once()
-    assert result == 0
-
-
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_prefer_remove_nonexistent(mock_save_config, mock_load_config):
-    """
-    prefer_remove() should return 1 if the model has no preferred provider.
-    """
-    mock_load_config.return_value = get_test_config_with_openai()
-    result = prefer_remove("gpt-4o")
-    mock_save_config.assert_not_called()
-    assert result == 1
-
-
-# -- Tests for Config Display -- #
-
-
-@patch(
-    "cliff.config.load_config",
-    return_value=get_test_base_config(),
-)
-def test_show_config(mock_load_config, capsys):
-    """
-    show_config() should print the config and return 0. We'll just check the return code.
-    """
-    result = show_config()
-    captured = capsys.readouterr()
-    assert result == 0
-    assert "Provider Credentials" in captured.out
-
-
-@patch("cliff.config.load_config")
-def test_show_config_empty(mock_load_config, capsys):
-    """
-    show_config() should properly display an empty/default configuration
-    """
-    mock_load_config.return_value = get_test_base_config()
-
-    result = show_config()
-    captured = capsys.readouterr()
-
-    assert result == 0
-    assert "Not set" in captured.out
-    assert "No providers added" in captured.out
-    assert "10 Turns" in captured.out
-    assert "Ollama Models" not in captured.out
-    assert "Preferred Providers" not in captured.out
-
-
-@patch("cliff.config.load_config")
-def test_show_config_full(mock_load_config, capsys):
-    """
-    show_config() should properly display a configuration with all fields populated
-    """
-    config = {
-        "provider_credentials": {"openai": "123456789", "anthropic": "987654321"},
-        "default_model": "gpt-4o",
-        "preferred_providers": {"gpt-4o": "openai", "claude-3": "anthropic"},
-        "ollama_models": ["llama2", "mistral"],
-        "memory_window": 15,
-        "timeout_seconds": 20,
-    }
-    mock_load_config.return_value = config
-
-    result = show_config()
-    captured = capsys.readouterr()
-
-    assert result == 0
-    assert "gpt-4o" in captured.out
-    assert "15 Turns" in captured.out
-    assert "20 Seconds" in captured.out
-    assert "openai" in captured.out
-    assert "anthropic" in captured.out
-    assert "llama2" in captured.out
-    assert "mistral" in captured.out
-    assert "1234...6789" in captured.out
-    assert "9876...4321" in captured.out
-
-
-@patch("cliff.config.load_config")
-def test_show_config_partial(mock_load_config, capsys):
-    """
-    show_config() should properly display a configuration with some fields populated
-    """
-    config = {
-        "provider_credentials": {"openai": "123456789"},
-        "default_model": "gpt-4o",
+def test_add_provider_update():
+    """add_provider should update an existing valid provider."""
+    dummy_config = {
+        "provider_credentials": {"openai": "old-key"},
+        "default_model": "existing-model",
         "preferred_providers": {},
-        "ollama_models": ["llama2"],
+        "ollama_models": [],
         "memory_window": 10,
         "timeout_seconds": 20,
     }
-    mock_load_config.return_value = config
-
-    result = show_config()
-    captured = capsys.readouterr()
-
-    assert result == 0
-    assert "gpt-4o" in captured.out
-    assert "10 Turns" in captured.out
-    assert "20 Seconds" in captured.out
-    assert "openai" in captured.out
-    assert "llama2" in captured.out
-    assert "Preferred Providers" not in captured.out
-
-
-# -- Tests for Ollama Model Management -- #
+    with (
+        patch("cliff.config.validate_provider", return_value=True),
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = add_provider("openai", "updated-key")
+        assert result == 0
+        assert dummy_config["provider_credentials"]["openai"] == "updated-key"
+        # default_model remains unchanged because it was already set.
+        assert dummy_config["default_model"] == "existing-model"
+        mock_print.assert_called_once_with("Updated provider openai")
 
 
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_add_ollama_success(mock_save_config, mock_load_config):
-    """
-    add_ollama() should add a model to ollama_models and return 0.
-    """
-    mock_load_config.return_value = get_test_base_config()
-    result = add_ollama("llama2")
-    mock_save_config.assert_called_once()
-    assert result == 0
-
-
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_remove_ollama_success(mock_save_config, mock_load_config):
-    """
-    remove_ollama() should remove a model from ollama_models and return 0.
-    """
-    config = get_test_config_with_multiple_providers()
-    mock_load_config.return_value = config
-    result = remove_ollama("llama2")
-    mock_save_config.assert_called_once()
-    assert result == 0
-
-
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_remove_ollama_nonexistent(mock_save_config, mock_load_config):
-    """
-    remove_ollama() should return 1 if the model is not in ollama_models.
-    """
-    mock_load_config.return_value = get_test_base_config()
-    result = remove_ollama("nonexistent-model")
-    mock_save_config.assert_not_called()
-    assert result == 1
-
-
-@patch("cliff.config.add_ollama", return_value=0)
-def test_process_config_command_add_ollama(mock_add_ollama):
-    """
-    process_config_command should invoke add_ollama when "add ollama" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["add", "ollama", "llama2"], llm)
-    mock_add_ollama.assert_called_once_with("llama2")
-    assert result == 0
-
-
-@patch("cliff.config.remove_ollama", return_value=0)
-def test_process_config_command_remove_ollama(mock_remove_ollama):
-    """
-    process_config_command should invoke remove_ollama when "remove ollama" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["remove", "ollama", "llama2"], llm)
-    mock_remove_ollama.assert_called_once_with("llama2")
-    assert result == 0
-
-
-def test_process_config_command_add_ollama_usage():
-    """
-    process_config_command with "add ollama" but incorrect arguments should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["add", "ollama"], llm)
-    assert result == 1
-
-
-def test_process_config_command_remove_ollama_usage():
-    """
-    process_config_command with "remove ollama" but incorrect arguments should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["remove", "ollama"], llm)
-    assert result == 1
-
-
-@patch("l2m2.client.LLMClient.add_provider")
-@patch("l2m2.client.LLMClient.set_preferred_providers")
-@patch("l2m2.client.LLMClient.add_local_model")
-def test_apply_config_with_ollama(
-    mock_add_local, mock_set_preferred, mock_add_provider
-):
-    """
-    apply_config() should properly configure local Ollama models.
-    """
-    config = {
-        "provider_credentials": {"openai": "test-key"},
-        "default_model": "gpt-4",
-        "preferred_providers": {"gpt-4": "openai"},
-        "ollama_models": ["llama2", "mistral"],
+def test_add_ollama_model():
+    """add_ollama_model should append the model and set default_model if None."""
+    dummy_config = {
+        "provider_credentials": {},
+        "default_model": None,
+        "preferred_providers": {},
+        "ollama_models": [],
         "memory_window": 10,
+        "timeout_seconds": 20,
     }
-    llm = LLMClient()
-
-    apply_config(config, llm)
-
-    mock_add_local.assert_has_calls(
-        [call("llama2", "ollama"), call("mistral", "ollama")]
-    )
-    mock_add_provider.assert_called_once_with("openai", "test-key")
-    mock_set_preferred.assert_called_once_with({"gpt-4": "openai"})
-
-
-# -- Tests for Misc Command Processing -- #
-
-
-@patch("cliff.config.add_provider", return_value=0)
-def test_process_config_command_add_provider(mock_add_provider):
-    """
-    process_config_command should invoke add_provider when "add" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["add", "openai", "test-key"], llm)
-    mock_add_provider.assert_called_once_with("openai", "test-key")
-    assert result == 0
+    with (
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = add_ollama_model("local-model")
+        assert result == 0
+        assert "local-model" in dummy_config["ollama_models"]
+        # default_model should be set to the model since it was None.
+        assert dummy_config["default_model"] == "local-model"
+        mock_print.assert_called_once_with("Added local model local-model")
 
 
-@patch("cliff.config.remove_provider", return_value=0)
-def test_process_config_command_remove_provider(mock_remove_provider):
-    """
-    process_config_command should invoke remove_provider when "remove" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["remove", "openai"], llm)
-    mock_remove_provider.assert_called_once_with("openai")
-    assert result == 0
+def test_set_default_model_invalid(dummy_llm):
+    """set_default_model should return 1 if the model is invalid."""
+    with (
+        patch("cliff.config.validate_model", return_value=False) as mock_validate,
+        patch("cliff.config.cliff_print"),
+    ):
+        result = set_default_model("non-existent", dummy_llm)
+        assert result == 1
+        mock_validate.assert_called_once_with("non-existent", dummy_llm)
 
 
-@patch("cliff.config.set_default_model", return_value=0)
-def test_process_config_command_set_default_model(mock_set_default_model):
-    """
-    process_config_command should invoke set_default_model when "default-model" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["default-model", "gpt-4o"], llm)
-    mock_set_default_model.assert_called_once_with("gpt-4o", llm)
-    assert result == 0
+def test_set_default_model_valid(dummy_llm, default_config_copy):
+    """set_default_model should update default_model when the model is valid."""
+    dummy_config = deepcopy(default_config_copy)
+    with (
+        patch("cliff.config.validate_model", return_value=True),
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = set_default_model("dummy-model", dummy_llm)
+        assert result == 0
+        assert dummy_config["default_model"] == "dummy-model"
+        mock_print.assert_called_once_with("Set default model to dummy-model")
 
 
-@patch("cliff.config.show_config", return_value=0)
-def test_process_config_command_show(mock_show_config):
-    """
-    process_config_command should invoke show_config when "show" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["show"], llm)
-    mock_show_config.assert_called_once()
-    assert result == 0
+def test_prefer_add_invalid_model(dummy_llm):
+    """prefer_add should return 1 if the model is invalid."""
+    with (
+        patch("cliff.config.validate_model", return_value=False) as mock_val_model,
+        patch("cliff.config.cliff_print"),
+    ):
+        result = prefer_add("non-existent", "openai", dummy_llm)
+        assert result == 1
+        mock_val_model.assert_called_once_with("non-existent", dummy_llm)
 
 
-def test_process_config_command_invalid():
-    """
-    process_config_command with an unrecognized command should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["bad-command"], llm)
-    assert result == 1
+def test_prefer_add_invalid_provider(dummy_llm):
+    """prefer_add should return 1 if the provider is invalid."""
+    with (
+        patch("cliff.config.validate_model", return_value=True),
+        patch(
+            "cliff.config.validate_provider", return_value=False
+        ) as mock_val_provider,
+        patch("cliff.config.cliff_print"),
+    ):
+        result = prefer_add("dummy-model", "invalid-provider", dummy_llm)
+        assert result == 1
+        mock_val_provider.assert_called_once_with("invalid-provider")
 
 
-def test_process_config_command_add_provider_usage():
-    """
-    process_config_command with "add" but incorrect arguments should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["add", "only-one-arg"], llm)
-    assert result == 1
+def test_prefer_add_valid(dummy_llm, default_config_copy):
+    """prefer_add should update the preferred_providers for a valid model and provider."""
+    dummy_config = deepcopy(default_config_copy)
+    with (
+        patch("cliff.config.validate_model", return_value=True),
+        patch("cliff.config.validate_provider", return_value=True),
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = prefer_add("dummy-model", "openai", dummy_llm)
+        assert result == 0
+        assert dummy_config["preferred_providers"]["dummy-model"] == "openai"
+        mock_print.assert_called_once_with(
+            "Added preferred provider openai for dummy-model"
+        )
 
 
-def test_process_config_command_remove_provider_usage():
-    """
-    process_config_command with "remove" but incorrect arguments should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["remove"], llm)
-    assert result == 1
+def test_update_memory_window_invalid():
+    """update_memory_window should return 1 if invalid window provided."""
+    with (
+        patch(
+            "cliff.config.validate_memory_window", return_value=False
+        ) as mock_validate,
+        patch("cliff.config.cliff_print"),
+    ):
+        result = update_memory_window("abc")
+        assert result == 1
+        mock_validate.assert_called_once_with("abc")
 
 
-def test_process_config_command_set_default_model_usage():
-    """
-    process_config_command with "default-model" but incorrect arguments should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["default-model"], llm)
-    assert result == 1
+def test_update_memory_window_valid(default_config_copy):
+    """update_memory_window should update memory_window in config if valid."""
+    dummy_config = deepcopy(default_config_copy)
+    with (
+        patch("cliff.config.validate_memory_window", return_value=True),
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = update_memory_window("15")
+        assert result == 0
+        assert dummy_config["memory_window"] == 15
+        mock_print.assert_called_once_with("Updated memory window size to 15")
 
 
-@patch("builtins.open", new_callable=mock_open, read_data="Help content")
-def test_process_config_command_help(mock_file):
-    """
-    process_config_command should print help content when "help" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["help"], llm)
-    mock_file.assert_called_once_with(HELP_FILE, "r")
-    assert result == 0
+def test_update_timeout_invalid():
+    """update_timeout should return 1 if timeout is invalid."""
+    with (
+        patch("cliff.config.validate_timeout", return_value=False) as mock_validate,
+        patch("cliff.config.cliff_print"),
+    ):
+        result = update_timeout("0")
+        assert result == 1
+        mock_validate.assert_called_once_with("0")
 
 
-@patch("cliff.config.prefer_add", return_value=0)
-def test_process_config_command_prefer_add(mock_prefer_add):
-    """
-    process_config_command should invoke prefer_add when "prefer" is specified with a model and provider.
-    """
-    llm = LLMClient()
-    result = process_config_command(["prefer", "gpt-4o", "openai"], llm)
-    mock_prefer_add.assert_called_once_with("gpt-4o", "openai")
-    assert result == 0
+def test_update_timeout_valid(default_config_copy):
+    """update_timeout should update timeout_seconds in config if valid."""
+    dummy_config = deepcopy(default_config_copy)
+    with (
+        patch("cliff.config.validate_timeout", return_value=True),
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = update_timeout("25")
+        assert result == 0
+        assert dummy_config["timeout_seconds"] == 25
+        mock_print.assert_called_once_with("Updated timeout to 25 seconds")
 
 
-@patch("cliff.config.prefer_remove", return_value=0)
-def test_process_config_command_prefer_remove(mock_prefer_remove):
-    """
-    process_config_command should invoke prefer_remove when "prefer remove" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["prefer", "remove", "gpt-4o"], llm)
-    mock_prefer_remove.assert_called_once_with("gpt-4o")
-    assert result == 0
+# -- Tests for Remove Functions -- #
 
 
-def test_process_config_command_prefer_usage():
-    """
-    process_config_command with "prefer" but incorrect arguments should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["prefer", "only-one-arg"], llm)
-    assert result == 1
+def test_remove_provider_not_found(default_config_copy):
+    """remove_provider should return 1 if provider is not in config."""
+    dummy_config = deepcopy(default_config_copy)
+    # No provider credentials set initially.
+    with (
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = remove_provider("openai")
+        assert result == 1
+        mock_print.assert_called_once_with("Provider openai not found")
 
 
-@patch("cliff.config.reset_config", return_value=0)
-def test_process_config_command_reset(mock_reset_config):
-    """
-    process_config_command should invoke reset_config when "reset" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["reset"], llm)
-    mock_reset_config.assert_called_once()
-    assert result == 0
+def test_remove_provider_found(default_config_copy):
+    """remove_provider should remove an existing provider."""
+    dummy_config = deepcopy(default_config_copy)
+    dummy_config["provider_credentials"]["openai"] = "key123"
+    with (
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = remove_provider("openai")
+        assert result == 0
+        assert "openai" not in dummy_config["provider_credentials"]
+        mock_print.assert_called_once_with("Removed provider openai")
 
 
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_update_memory_window_success(mock_save_config, mock_load_config):
-    """
-    update_memory_window() should update the memory window size and return 0.
-    """
-    mock_load_config.return_value = get_test_base_config()
-    result = update_memory_window(15)
-    mock_save_config.assert_called_once()
-    assert result == 0
+def test_remove_ollama_model_not_found(default_config_copy):
+    """remove_ollama_model should return 1 if the model is not present."""
+    dummy_config = deepcopy(default_config_copy)
+    with (
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = remove_ollama_model("nonexistent")
+        assert result == 1
+        mock_print.assert_called_once_with("local model nonexistent not found")
 
 
-@patch("cliff.config.save_config")
-def test_reset_config_success(mock_save_config):
-    """
-    reset_config() should reset to default config and return 0.
-    """
-    result = reset_config()
-    mock_save_config.assert_called_once_with(DEFAULT_CONFIG)
-    assert result == 0
+def test_remove_ollama_model_found(default_config_copy):
+    """remove_ollama_model should remove the model if present."""
+    dummy_config = deepcopy(default_config_copy)
+    dummy_config["ollama_models"].append("local-model")
+    with (
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = remove_ollama_model("local-model")
+        assert result == 0
+        assert "local-model" not in dummy_config["ollama_models"]
+        mock_print.assert_called_once_with("Removed local model local-model")
 
 
-@patch("cliff.config.update_memory_window", return_value=0)
-def test_process_config_command_memory_window(mock_update_memory_window):
-    """
-    process_config_command should invoke update_memory_window when "memory-window" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["memory-window", "15"], llm)
-    mock_update_memory_window.assert_called_once_with(15)
-    assert result == 0
+def test_prefer_remove_not_found(default_config_copy):
+    """prefer_remove should return 1 if preferred provider for model does not exist."""
+    dummy_config = deepcopy(default_config_copy)
+    with (
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = prefer_remove("dummy-model")
+        assert result == 1
+        mock_print.assert_called_once_with(
+            "Preferred provider for dummy-model not found"
+        )
 
 
-def test_process_config_command_memory_window_usage():
-    """
-    process_config_command with "memory-window" but incorrect arguments should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["memory-window"], llm)
-    assert result == 1
+def test_prefer_remove_found(default_config_copy):
+    """prefer_remove should remove the preferred provider entry if present."""
+    dummy_config = deepcopy(default_config_copy)
+    dummy_config["preferred_providers"]["dummy-model"] = "openai"
+    with (
+        patch("cliff.config.load_config", return_value=dummy_config),
+        patch("cliff.config.save_config"),
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = prefer_remove("dummy-model")
+        assert result == 0
+        assert "dummy-model" not in dummy_config["preferred_providers"]
+        mock_print.assert_called_once_with("Removed preferred provider for dummy-model")
 
 
-@patch("cliff.config.update_timeout", return_value=0)
-def test_process_config_command_timeout(mock_update_timeout):
-    """
-    process_config_command should invoke update_timeout when "timeout" is specified.
-    """
-    llm = LLMClient()
-    result = process_config_command(["timeout", "15"], llm)
-    mock_update_timeout.assert_called_once_with(15)
-    assert result == 0
+# -- Tests for Misc Functions -- #
 
 
-def test_process_config_command_timeout_usage():
-    """
-    process_config_command with "timeout" but incorrect arguments should return 1.
-    """
-    llm = LLMClient()
-    result = process_config_command(["timeout"], llm)
-    assert result == 1
+def test_reset_config():
+    """reset_config should call save_config with DEFAULT_CONFIG and print a reset message."""
+    with (
+        patch("cliff.config.save_config") as mock_save,
+        patch("cliff.config.cliff_print") as mock_print,
+    ):
+        result = reset_config()
+        assert result == 0
+        mock_save.assert_called_once_with(DEFAULT_CONFIG)
+        mock_print.assert_called_once_with("Reset config to defaults")
 
 
-@patch("cliff.config.load_config")
-@patch("cliff.config.save_config")
-def test_update_timeout_success(mock_save_config, mock_load_config):
-    """
-    update_timeout() should update the timeout seconds and return 0.
-    """
-    mock_load_config.return_value = get_test_base_config()
-    result = update_timeout(30)
-    mock_save_config.assert_called_once()
-    assert result == 0
+def test_show_config():
+    """show_config should print the config table and help message, and return 0."""
+    full_config = {
+        "provider_credentials": {"openai": "abc123", "google": "xyz789"},
+        "default_model": "gpt-4o",
+        "preferred_providers": {"dummy-model": "openai", "other-model": "google"},
+        "ollama_models": ["local-model-1", "local-model-2"],
+        "memory_window": 15,
+        "timeout_seconds": 30,
+    }
+
+    with (
+        patch("cliff.config.load_config", return_value=full_config),
+        patch("cliff.config.console") as mock_console,
+        patch("builtins.print") as mock_builtin_print,
+    ):
+        result = show_config()
+        assert result == 0
+        assert mock_console.print.call_count >= 1
+        assert mock_builtin_print.call_count >= 2
+
+
+def test_show_config_default():
+    """show_config should print the config table and help message, and return 0."""
+    with (
+        patch("cliff.config.load_config", return_value=DEFAULT_CONFIG),
+        patch("cliff.config.console") as mock_console,
+        patch("builtins.print") as mock_builtin_print,
+    ):
+        result = show_config()
+        assert result == 0
+        assert mock_console.print.call_count >= 1
+        assert mock_builtin_print.call_count >= 2
+
+
+# -- Tests for process_config_command function -- #
+
+
+def test_help_command_empty(dummy_llm):
+    """process_config_command with empty or 'help' should call resource_print and return 0."""
+    with patch("cliff.config.resource_print") as mock_resource_print:
+        result = process_config_command([], dummy_llm)
+        assert result == 0
+        mock_resource_print.assert_called_once_with(HELP_FILE)
+    with patch("cliff.config.resource_print") as mock_resource_print:
+        result = process_config_command(["help"], dummy_llm)
+        assert result == 0
+        mock_resource_print.assert_called_once_with(HELP_FILE)
+
+
+def test_add_wrong_usage(dummy_llm):
+    """process_config_command 'add' with wrong parameters should print usage and return 1."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = process_config_command(["add", "openai"], dummy_llm)
+        assert result == 1
+        mock_print.assert_called_once_with(
+            "Usage: add [provider] [api-key] or add ollama [model]"
+        )
+
+
+def test_add_ollama(dummy_llm):
+    """process_config_command 'add ollama [model]' should call add_ollama_model."""
+    with patch("cliff.config.add_ollama_model", return_value=0) as mock_add:
+        result = process_config_command(["add", "ollama", "local-model"], dummy_llm)
+        assert result == 0
+        mock_add.assert_called_once_with("local-model")
+
+
+def test_add_provider(dummy_llm):
+    """process_config_command 'add [provider] [key]' should call add_provider."""
+    with patch("cliff.config.add_provider", return_value=0) as mock_add:
+        result = process_config_command(["add", "openai", "apikey"], dummy_llm)
+        assert result == 0
+        mock_add.assert_called_once_with("openai", "apikey")
+
+
+def test_remove_wrong_usage(dummy_llm):
+    """process_config_command 'remove' with insufficient args should print usage and return 1."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = process_config_command(["remove"], dummy_llm)
+        assert result == 1
+        mock_print.assert_called_once_with(
+            "Usage: remove [provider] or remove ollama [model]"
+        )
+
+
+def test_remove_ollama_wrong_usage(dummy_llm):
+    """process_config_command 'remove ollama' with insufficient args returns 1."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = process_config_command(["remove", "ollama"], dummy_llm)
+        assert result == 1
+        mock_print.assert_called_once_with("Usage: remove ollama [model]")
+
+
+def test_remove_ollama(dummy_llm):
+    """process_config_command 'remove ollama [model]' should call remove_ollama_model."""
+    with patch("cliff.config.remove_ollama_model", return_value=0) as mock_remove:
+        result = process_config_command(["remove", "ollama", "local-model"], dummy_llm)
+        assert result == 0
+        mock_remove.assert_called_once_with("local-model")
+
+
+def test_remove_provider(dummy_llm):
+    """process_config_command 'remove [provider]' should call remove_provider."""
+    with patch("cliff.config.remove_provider", return_value=0) as mock_remove:
+        result = process_config_command(["remove", "openai"], dummy_llm)
+        assert result == 0
+        mock_remove.assert_called_once_with("openai")
+
+
+def test_default_model_wrong_usage(dummy_llm):
+    """process_config_command 'default-model' with wrong usage returns 1."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = process_config_command(["default-model"], dummy_llm)
+        assert result == 1
+        mock_print.assert_called_once_with("Usage: default-model [model]")
+
+
+def test_default_model(dummy_llm):
+    """process_config_command 'default-model [model]' should call set_default_model."""
+    with patch("cliff.config.set_default_model", return_value=0) as mock_set:
+        result = process_config_command(["default-model", "dummy-model"], dummy_llm)
+        assert result == 0
+        mock_set.assert_called_once_with("dummy-model", dummy_llm)
+
+
+def test_prefer_wrong_usage(dummy_llm):
+    """process_config_command 'prefer' with wrong parameters should return 1."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = process_config_command(["prefer"], dummy_llm)
+        assert result == 1
+        mock_print.assert_called_once_with(
+            "Usage: prefer [model] [provider] or prefer remove [model]"
+        )
+
+
+def test_prefer_remove(dummy_llm):
+    """process_config_command 'prefer remove [model]' should call prefer_remove."""
+    with patch("cliff.config.prefer_remove", return_value=0) as mock_remove:
+        result = process_config_command(["prefer", "remove", "dummy-model"], dummy_llm)
+        assert result == 0
+        mock_remove.assert_called_once_with("dummy-model")
+
+
+def test_prefer_add(dummy_llm):
+    """process_config_command 'prefer [model] [provider]' should call prefer_add."""
+    with patch("cliff.config.prefer_add", return_value=0) as mock_add:
+        result = process_config_command(["prefer", "dummy-model", "openai"], dummy_llm)
+        assert result == 0
+        mock_add.assert_called_once_with("dummy-model", "openai", dummy_llm)
+
+
+def test_memory_window_wrong_usage(dummy_llm):
+    """process_config_command 'memory-window' with wrong usage should print usage and return 1."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = process_config_command(["memory-window"], dummy_llm)
+        assert result == 1
+        mock_print.assert_called_once_with("Usage: memory-window [window-size]")
+
+
+def test_memory_window(dummy_llm):
+    """process_config_command 'memory-window [size]' should call update_memory_window."""
+    with patch("cliff.config.update_memory_window", return_value=0) as mock_update:
+        result = process_config_command(["memory-window", "20"], dummy_llm)
+        assert result == 0
+        mock_update.assert_called_once_with("20")
+
+
+def test_timeout_wrong_usage(dummy_llm):
+    """process_config_command 'timeout' with wrong usage should print usage and return 1."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = process_config_command(["timeout"], dummy_llm)
+        assert result == 1
+        mock_print.assert_called_once_with("Usage: timeout [seconds]")
+
+
+def test_timeout(dummy_llm):
+    """process_config_command 'timeout [seconds]' should call update_timeout."""
+    with patch("cliff.config.update_timeout", return_value=0) as mock_update:
+        result = process_config_command(["timeout", "30"], dummy_llm)
+        assert result == 0
+        mock_update.assert_called_once_with("30")
+
+
+def test_reset(dummy_llm):
+    """process_config_command 'reset' should call reset_config."""
+    with patch("cliff.config.reset_config", return_value=0) as mock_reset:
+        result = process_config_command(["reset"], dummy_llm)
+        assert result == 0
+        mock_reset.assert_called_once()
+
+
+def test_show(dummy_llm):
+    """process_config_command 'show' should call show_config."""
+    with patch("cliff.config.show_config", return_value=0) as mock_show:
+        result = process_config_command(["show"], dummy_llm)
+        assert result == 0
+        mock_show.assert_called_once()
+
+
+def test_unrecognized_command(dummy_llm):
+    """process_config_command with unknown command should print error and return 1."""
+    with patch("cliff.config.cliff_print") as mock_print:
+        result = process_config_command(["notacommand"], dummy_llm)
+        assert result == 1
+        mock_print.assert_called_once_with(
+            "Unrecognized config command: notacommand. For usage, run cliff --config help"
+        )

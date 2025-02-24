@@ -1,8 +1,14 @@
 # Changelog
 
-_Current version: 0.2.1_
+_Current version: 0.2.2_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.2.2 - February 24, 2025
+
+#### Fixed
+
+- Fixed an issue where passing in invalid config values (such as `cliff --config memory-window -1`) would make the configuration system unusable by adding validation checks to the config system.
 
 ### 0.2.1 - February 22, 2025
 
