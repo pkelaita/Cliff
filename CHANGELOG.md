@@ -1,8 +1,14 @@
 # Changelog
 
-_Current version: 0.2.2_
+_Current version: 0.3.0_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.3.0 - February 24, 2025
+
+#### Added
+
+- Updated [L2M2](https://github.com/pkelaita/l2m2) from v0.0.43 to v0.0.44, which adds support for Anthropic's [Claude 3.7 Sonnet](https://www.anthropic.com/news/claude-3-7-sonnet) model released today.
 
 ### 0.2.2 - February 24, 2025
 
