@@ -8,11 +8,15 @@ from l2m2.client import LLMClient
 
 from cliff.console import cliff_print, console, resource_print
 
-HOME_DIR = os.path.expanduser("~")
-CONFIG_FILE = os.path.join(HOME_DIR, ".cliff", "config.json")
 
-DIR = os.path.dirname(os.path.abspath(__file__))
-HELP_FILE = os.path.join(DIR, "resources/config_help.txt")
+HOME_DIR = os.path.expanduser("~")
+if os.getenv("CLIFF_ENV") == "development":  # pragma: no cover
+    CONFIG_FILE = os.path.join(HOME_DIR, ".cliff", "config.dev.json")
+else:
+    CONFIG_FILE = os.path.join(HOME_DIR, ".cliff", "config.json")
+
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+HELP_FILE = os.path.join(SCRIPT_DIR, "resources/config_help.txt")
 
 HOSTED_PROVIDERS = {
     "groq",

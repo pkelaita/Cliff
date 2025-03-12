@@ -6,8 +6,12 @@ import subprocess
 from l2m2.client import LLMClient
 from l2m2.memory import ChatMemory
 from l2m2.tools import PromptLoader
-
 from l2m2.exceptions import LLMTimeoutError
+
+if __name__ == "__main__":  # pragma: no cover
+    os.environ["CLIFF_ENV"] = "development"
+else:
+    os.environ["CLIFF_ENV"] = "production"
 
 from cliff import __version__
 from cliff.config import (
@@ -186,6 +190,6 @@ def main() -> None:
                 cliff_print(f.read())
 
 
-if __name__ == "__main__":  # pragma: no cover
+if os.getenv("CLIFF_ENV") == "development":  # pragma: no cover
     cliff_print("dev mode")
     main()
