@@ -1,8 +1,18 @@
 # Changelog
 
-_Current version: 0.3.0_
+_Current version: 0.4.0_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.4.0 - March 12, 2025
+
+#### Added
+
+- Upgraded [L2M2](https://github.com/pkelaita/l2m2) from v0.0.44 to v0.0.46, which adds support for [GPT-4.5](https://openai.com/index/introducing-gpt-4-5/).
+
+#### Fixed
+
+- L2M2's [v0.0.45](https://github.com/pkelaita/l2m2/releases/tag/v0.0.45) and [v0.0.46](https://github.com/pkelaita/l2m2/releases/tag/v0.0.46) updates also both patch a few small bugs with reasoning models.
 
 ### 0.3.0 - February 24, 2025
 
