@@ -6,7 +6,7 @@ Cliff (**C**ommand **L**ine **I**nter**F**ace **F**riend) is an AI assistant tha
 
 ![demo](https://i.imgur.com/uer28Mi.gif)
 
-Cliff is compatible with LLMs from OpenAI, Anthropic, etc. as well as local models running with Ollama.
+Cliff is compatible with LLMs from closed-source providers (OpenAI, Anthropic etc.), inference providers (Groq, Cerebras, etc.), as well as local models running with [Ollama](https://ollama.com/).
 
 ## Why?
 
