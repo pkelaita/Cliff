@@ -80,7 +80,7 @@ cliff "kill the process that's running on port 8080"
 If you want to specify which model to use, you can do so with the `--model` or `-m` flag.
 
 ```
-cliff --model gpt-4o kill the process running on port 8080
+cliff --model gpt-4o-mini kill the process running on port 8080
 ```
 
 To view the man page, run `cliff` with no arguments.
