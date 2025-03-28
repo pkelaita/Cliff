@@ -31,7 +31,7 @@ HOSTED_PROVIDERS = {
 
 DEFAULT_MODEL_MAPPING = {
     "groq": "llama-3.3-70b",
-    "cohere": "command-r",
+    "cohere": "command-a",
     "mistral": "mistral-small",
     "replicate": "llama-3-70b",
     "openai": "gpt-4o",

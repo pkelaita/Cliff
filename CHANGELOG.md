@@ -1,8 +1,18 @@
 # Changelog
 
-_Current version: 0.4.0_
+_Current version: 0.5.0_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.5.0 - March 27, 2025
+
+#### Added
+
+- Upgraded [L2M2](https://github.com/pkelaita/l2m2) from v0.0.46 to v0.0.49, which adds support for Google's [Gemini-2.5-Pro](https://blog.google/technology/google-deepmind/gemini-model-thinking-updates-march-2025/), Mistral's [Mistral-Saba](https://mistral.ai/news/mistral-saba) (via both Mistral Cloud and Groq), OpenAI's [o1-pro](https://platform.openai.com/docs/models/o1-pro), and Cohere's [Command-A](https://cohere.com/blog/command-a).
+
+#### Changed
+
+- Updated the default model for Cohere from `command-r` to `command-a`.
 
 ### 0.4.0 - March 12, 2025
 

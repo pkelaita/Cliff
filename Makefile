@@ -51,3 +51,4 @@ publish: clean build
 
 update-docs:
 	uv run scripts/update_docs.py
+	./scripts/update_badges.sh
