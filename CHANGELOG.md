@@ -1,8 +1,18 @@
 # Changelog
 
-_Current version: 0.5.0_
+_Current version: 0.5.1_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.5.1 - May 1, 2025
+
+#### Changed
+
+- Updated [L2M2](https://github.com/pkelaita/l2m2) from v0.0.49 to v0.0.51, which adds a ton of new models, including o3, GPT-4.1, Llama 4, and more. See the L2M2 [release notes](https://github.com/pkelaita/l2m2/releases/tag/v0.0.51) for all of the new models added, and see Cliff's [supported models](https://github.com/pkelaita/cliff/blob/main/docs/supported_models.md) page for the latest list of supported models.
+- Updated some of the default models for providers:
+  - OpenAI: `gpt-4o` → `gpt-4.1`
+  - Mistral: `mistral-small` → `codestral`
+  - Anthropic: `claude-3.5-sonnet` → `claude-3.7-sonnet`
 
 ### 0.5.0 - March 27, 2025
 

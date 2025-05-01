@@ -11,7 +11,10 @@ urls.Documentation = "https://github.com/pkelaita/cliff/blob/main/README.md"
 urls.Repository = "https://github.com/pkelaita/cliff.git"
 urls.Issues = "https://github.com/pkelaita/cliff/issues"
 dynamic = ["version"]
-dependencies = ["l2m2==0.0.49", "rich==13.9.4"]
+dependencies = [
+ "l2m2>=0.0.51",
+ "rich==13.9.4",
+]
 
 [dependency-groups]
 dev = [
