@@ -123,7 +123,7 @@ def test_apply_config():
     }
     dummy_llm = MagicMock()
     with patch("cliff.config.load_config", return_value=config):
-        apply_config(config, dummy_llm)
+        apply_config(config, dummy_llm)  # ty: ignore
         # add_provider is called for each provider credential
         dummy_llm.add_provider.assert_called_once_with("openai", "abc123")
         dummy_llm.set_preferred_providers.assert_called_once_with(

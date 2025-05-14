@@ -50,7 +50,7 @@ class Config(TypedDict):
     timeout_seconds: int
 
 
-DEFAULT_CONFIG: Config = {
+DEFAULT_CONFIG: Config = {  # ty: ignore
     "provider_credentials": {},
     "default_model": None,
     "preferred_providers": {},

@@ -26,7 +26,7 @@ lint:
 	-uv run ruff check .
 
 type:
-	-uv run mypy .
+	-uv run ty check .
 
 build:
 	uv build
