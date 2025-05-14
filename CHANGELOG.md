@@ -4,6 +4,13 @@ _Current version: 0.5.1_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
 
+### 0.5.2 - May 14, 2025
+
+#### Changed
+
+- Updated [L2M2](https://github.com/pkelaita/l2m2) from v0.0.51 to v0.0.53, which adds Gemini 2.5 Flash and upates Gemini 2.5 Pro to the latest API version.
+- Improved DevX by adding [ty](https://github.com/astral-sh/ty) for type checking and Pydantic for config validation.
+
 ### 0.5.1 - May 1, 2025
 
 #### Changed

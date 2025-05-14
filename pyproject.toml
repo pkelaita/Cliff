@@ -11,10 +11,7 @@ urls.Documentation = "https://github.com/pkelaita/cliff/blob/main/README.md"
 urls.Repository = "https://github.com/pkelaita/cliff.git"
 urls.Issues = "https://github.com/pkelaita/cliff/issues"
 dynamic = ["version"]
-dependencies = [
- "l2m2>=0.0.51",
- "rich==13.9.4",
-]
+dependencies = ["l2m2==0.0.53", "pydantic==2.11.4", "rich==13.9.4"]
 
 [dependency-groups]
 dev = [
@@ -24,6 +21,7 @@ dev = [
     "ruff>=0.9.7",
     "tox>=4.24.1",
     "twine>=6.1.0",
+    "ty>=0.0.1a1",
 ]
 
 [project.scripts]
@@ -34,6 +32,10 @@ cliff = "cliff.cliff:main"
 dynamic.version = { attr = "cliff.__version__" }
 packages = { find = { where = ["."], include = ["cliff*"] } }
 package-data.cliff = ["resources/**/*", "prompts/**/*"]
+
+
+[tool.ty.environment]
+python = "./.venv"
 
 
 [tool.mypy]

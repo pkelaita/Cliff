@@ -1,7 +1,8 @@
-from typing import Dict, Optional, List, TypedDict
+from typing import Dict, Optional, List, Any
 import os
 import json
 
+from pydantic import BaseModel, Field
 from rich.table import Table
 from rich import box
 from l2m2.client import LLMClient
@@ -41,23 +42,23 @@ DEFAULT_MODEL_MAPPING = {
 }
 
 
-class Config(TypedDict):
+class Config(BaseModel):
     provider_credentials: Dict[str, str]
     default_model: Optional[str]
     preferred_providers: Dict[str, str]
     ollama_models: List[str]
-    memory_window: int
-    timeout_seconds: int
+    memory_window: int = Field(ge=0)
+    timeout_seconds: int = Field(gt=0)
 
 
-DEFAULT_CONFIG: Config = {
-    "provider_credentials": {},
-    "default_model": None,
-    "preferred_providers": {},
-    "ollama_models": [],
-    "memory_window": 10,
-    "timeout_seconds": 20,
-}
+DEFAULT_CONFIG = Config(
+    provider_credentials={},
+    default_model=None,
+    preferred_providers={},
+    ollama_models=[],
+    memory_window=10,
+    timeout_seconds=20,
+)
 
 
 # -- Config Management -- #
@@ -65,7 +66,7 @@ DEFAULT_CONFIG: Config = {
 
 def save_config(config: Config) -> None:
     with open(CONFIG_FILE, "w") as f:
-        json.dump(config, f, indent=4)
+        json.dump(config.model_dump(), f, indent=4)
 
 
 def load_config() -> Config:
@@ -74,25 +75,31 @@ def load_config() -> Config:
         config = DEFAULT_CONFIG
     else:
         with open(CONFIG_FILE, "r") as f:
-            config = json.load(f)
+            try:
+                loaded_json_data = json.load(f)
+            except json.JSONDecodeError:
+                loaded_json_data = {}
 
-    # Ensure config has all fields
-    for field in DEFAULT_CONFIG:
-        if field not in config:
-            config[field] = DEFAULT_CONFIG[field]  # type: ignore
+            data_to_merge = (
+                loaded_json_data if isinstance(loaded_json_data, dict) else {}
+            )
+
+            default_data = DEFAULT_CONFIG.model_dump()
+            merged_data: Dict[str, Any] = {**default_data, **data_to_merge}
+
+            config = Config.model_validate(merged_data)
 
     save_config(config)
-
     return config
 
 
 def apply_config(config: Config, llm: LLMClient) -> None:
-    for provider in config["provider_credentials"]:
-        llm.add_provider(provider, config["provider_credentials"][provider])
+    for provider in config.provider_credentials:
+        llm.add_provider(provider, config.provider_credentials[provider])
 
-    llm.set_preferred_providers(config["preferred_providers"])
+    llm.set_preferred_providers(config.preferred_providers)
 
-    for model in config["ollama_models"]:
+    for model in config.ollama_models:
         llm.add_local_model(model, "ollama")
 
 
@@ -114,32 +121,6 @@ def validate_model(model: str, llm: LLMClient) -> bool:
     return True
 
 
-def validate_timeout(value: str) -> bool:
-    error_msg = "Timeout must be a positive integer"
-    try:
-        int_value = int(value)
-    except ValueError:
-        cliff_print(error_msg)
-        return False
-    if int_value <= 0:
-        cliff_print(error_msg)
-        return False
-    return True
-
-
-def validate_memory_window(value: str) -> bool:
-    error_msg = "Memory window must be a non-negative integer"
-    try:
-        int_value = int(value)
-    except ValueError:
-        cliff_print(error_msg)
-        return False
-    if int_value < 0:
-        cliff_print(error_msg)
-        return False
-    return True
-
-
 # -- Add/Update Functions -- #
 
 
@@ -148,12 +129,12 @@ def add_provider(provider: str, api_key: str) -> int:
         return 1
 
     config = load_config()
-    exists = config["provider_credentials"].get(provider)
+    exists = provider in config.provider_credentials
 
-    config["provider_credentials"][provider] = api_key
+    config.provider_credentials[provider] = api_key
 
-    if config["default_model"] is None:
-        config["default_model"] = DEFAULT_MODEL_MAPPING[provider]
+    if config.default_model is None:
+        config.default_model = DEFAULT_MODEL_MAPPING[provider]
 
     save_config(config)
 
@@ -167,9 +148,9 @@ def add_provider(provider: str, api_key: str) -> int:
 
 def add_ollama_model(model: str) -> int:
     config = load_config()
-    config["ollama_models"].append(model)
-    if config["default_model"] is None:
-        config["default_model"] = model
+    config.ollama_models.append(model)
+    if config.default_model is None:
+        config.default_model = model
     save_config(config)
     cliff_print(f"Added local model {model}")
     return 0
@@ -180,7 +161,7 @@ def set_default_model(model: str, llm: LLMClient) -> int:
         return 1
 
     config = load_config()
-    config["default_model"] = model
+    config.default_model = model
     save_config(config)
 
     cliff_print(f"Set default model to {model}")
@@ -188,37 +169,51 @@ def set_default_model(model: str, llm: LLMClient) -> int:
 
 
 def prefer_add(model: str, provider: str, llm: LLMClient) -> int:
-    # TODO get the provider mappying from l2m2 for further validation
-
     if not validate_model(model, llm):
         return 1
     if not validate_provider(provider):
         return 1
 
     config = load_config()
-    config["preferred_providers"][model] = provider
+    config.preferred_providers[model] = provider
     save_config(config)
     cliff_print(f"Added preferred provider {provider} for {model}")
     return 0
 
 
 def update_memory_window(window: str) -> int:
-    if not validate_memory_window(window):
+    def handle_invalid():
+        cliff_print("Memory window must be a non-negative integer")
         return 1
 
+    try:
+        int_value = int(window)
+    except ValueError:
+        return handle_invalid()
+    if int_value < 0:
+        return handle_invalid()
+
     config = load_config()
-    config["memory_window"] = int(window)
+    config.memory_window = int_value
     save_config(config)
     cliff_print(f"Updated memory window size to {window}")
     return 0
 
 
 def update_timeout(timeout: str) -> int:
-    if not validate_timeout(timeout):
+    def handle_invalid():
+        cliff_print("Timeout must be a positive integer")
         return 1
 
+    try:
+        int_value = int(timeout)
+    except ValueError:
+        return handle_invalid()
+    if int_value <= 0:
+        return handle_invalid()
+
     config = load_config()
-    config["timeout_seconds"] = int(timeout)
+    config.timeout_seconds = int_value
     save_config(config)
     cliff_print(f"Updated timeout to {timeout} seconds")
     return 0
@@ -228,16 +223,14 @@ def update_timeout(timeout: str) -> int:
 
 
 def remove_provider(provider: str) -> int:
-    # TODO get the provider mapping from l2m2 to make sure we reset the default model if its provider is removed
-
     config = load_config()
-    exists = config["provider_credentials"].get(provider)
+    exists = provider in config.provider_credentials
 
     if not exists:
         cliff_print(f"Provider {provider} not found")
         return 1
 
-    del config["provider_credentials"][provider]
+    del config.provider_credentials[provider]
     save_config(config)
 
     cliff_print(f"Removed provider {provider}")
@@ -246,10 +239,10 @@ def remove_provider(provider: str) -> int:
 
 def remove_ollama_model(model: str) -> int:
     config = load_config()
-    if model not in config["ollama_models"]:
+    if model not in config.ollama_models:
         cliff_print(f"local model {model} not found")
         return 1
-    config["ollama_models"].remove(model)
+    config.ollama_models.remove(model)
     save_config(config)
     cliff_print(f"Removed local model {model}")
     return 0
@@ -257,11 +250,11 @@ def remove_ollama_model(model: str) -> int:
 
 def prefer_remove(model: str) -> int:
     config = load_config()
-    if model not in config["preferred_providers"]:
+    if model not in config.preferred_providers:
         cliff_print(f"Preferred provider for {model} not found")
         return 1
 
-    del config["preferred_providers"][model]
+    del config.preferred_providers[model]
     save_config(config)
     cliff_print(f"Removed preferred provider for {model}")
     return 0
@@ -287,15 +280,13 @@ def show_config() -> int:
     table.add_column("Key", style="cyan")
     table.add_column("Value")
 
-    # Default Model
-    default_model = config["default_model"]
+    default_model = config.default_model
     if default_model:
         table.add_row("Default Model", f"[magenta]{default_model}[/]")
     else:
         table.add_row("Default Model", "[italic red]Not set[/]")
 
-    # Provider Credentials
-    creds = config["provider_credentials"]
+    creds = config.provider_credentials
     if creds:
         cred_list = "\n".join(
             f"[green]{provider}[/]: [dim]{api_key[0]}{'...' if len(api_key) < 8 else api_key[1:4] + '...' + api_key[-4:]}[/]"
@@ -305,8 +296,7 @@ def show_config() -> int:
         cred_list = "[italic red]No providers added[/]"
     table.add_row("Provider Credentials", cred_list)
 
-    # Preferred Providers
-    prefs = config["preferred_providers"]
+    prefs = config.preferred_providers
     if prefs:
         pref_list = "\n".join(
             f"[magenta]{model}[/] → [green]{provider}[/]"
@@ -314,18 +304,15 @@ def show_config() -> int:
         )
         table.add_row("Preferred Providers", pref_list)
 
-    # Ollama Models
-    models = config["ollama_models"]
+    models = config.ollama_models
     if models:
         model_list = "\n".join(f"• [magenta]{model}[/]" for model in models)
         table.add_row("Ollama Models", model_list)
 
-    # Memory Window
-    memory_window = config["memory_window"]
+    memory_window = config.memory_window
     table.add_row("Memory Window", f"{memory_window} Turns")
 
-    # Timeout
-    timeout = config["timeout_seconds"]
+    timeout = config.timeout_seconds
     table.add_row("Timeout", f"{timeout} Seconds")
 
     console.print(table)
