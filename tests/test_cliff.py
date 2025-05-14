@@ -4,6 +4,7 @@ from unittest.mock import patch, mock_open
 from l2m2.exceptions import LLMTimeoutError
 
 from cliff.cliff import main, MAN_PAGE
+from cliff.config import Config
 
 
 # -- Tests for Basic Operations -- #
@@ -227,12 +228,14 @@ def test_main_no_default_model(
     main() should display help message and exit when no default model is set
     and no model is specified via command line.
     """
-    mock_load_config.return_value = {
-        "default_model": None,
-        "provider_credentials": {"test": "key"},
-        "memory_window": 10,
-        "timeout_seconds": 30,
-    }
+    mock_load_config.return_value = Config(
+        default_model=None,
+        provider_credentials={"test": "key"},
+        memory_window=10,
+        timeout_seconds=30,
+        preferred_providers={},
+        ollama_models=[],
+    )
     mock_get_active_models.return_value = ["test-model"]
 
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
@@ -269,12 +272,14 @@ def test_main_generate_command(
     """
     main() with objective should generate and copy command.
     """
-    mock_load_config.return_value = {
-        "default_model": "test-model",
-        "provider_credentials": {"test": "key"},
-        "memory_window": 10,
-        "timeout_seconds": 30,
-    }
+    mock_load_config.return_value = Config(
+        default_model="test-model",
+        provider_credentials={"test": "key"},
+        memory_window=10,
+        timeout_seconds=30,
+        preferred_providers={},
+        ollama_models=[],
+    )
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = '{"command": "ls -l"}'
 
@@ -305,11 +310,14 @@ def test_main_no_active_models(
     """
     main() with no active models should display welcome message.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {},
-        "timeout_seconds": 30,
-        "memory_window": 10,
-    }
+    mock_load_config.return_value = Config(
+        provider_credentials={},
+        timeout_seconds=30,
+        memory_window=10,
+        default_model=None,
+        preferred_providers={},
+        ollama_models=[],
+    )
     mock_get_active_models.return_value = []
     monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
 
@@ -343,12 +351,14 @@ def test_main_invalid_json_response(
     """
     main() should handle invalid JSON response from LLM.
     """
-    mock_load_config.return_value = {
-        "default_model": "test-model",
-        "provider_credentials": {"test": "key"},
-        "timeout_seconds": 30,
-        "memory_window": 10,
-    }
+    mock_load_config.return_value = Config(
+        default_model="test-model",
+        provider_credentials={"test": "key"},
+        timeout_seconds=30,
+        memory_window=10,
+        preferred_providers={},
+        ollama_models=[],
+    )
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = "invalid json"
 
@@ -382,12 +392,14 @@ def test_main_bad_llm_response(
     """
     main() should handle LLM response missing 'command' key.
     """
-    mock_load_config.return_value = {
-        "default_model": "test-model",
-        "provider_credentials": {"test": "key"},
-        "timeout_seconds": 30,
-        "memory_window": 10,
-    }
+    mock_load_config.return_value = Config(
+        default_model="test-model",
+        provider_credentials={"test": "key"},
+        timeout_seconds=30,
+        memory_window=10,
+        preferred_providers={},
+        ollama_models=[],
+    )
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.return_value = '{"some_other_key": "value"}'
 
@@ -421,12 +433,14 @@ def test_main_specific_model(
     """
     main() with model flag should use specified model.
     """
-    mock_load_config.return_value = {
-        "provider_credentials": {"test": "key"},
-        "default_model": "some-model",
-        "timeout_seconds": 30,
-        "memory_window": 10,
-    }
+    mock_load_config.return_value = Config(
+        provider_credentials={"test": "key"},
+        default_model="some-model",
+        timeout_seconds=30,
+        memory_window=10,
+        preferred_providers={},
+        ollama_models=[],
+    )
     mock_get_active_models.return_value = ["specific-model"]
     mock_llm_call.return_value = '{"command": "ls -l"}'
 
@@ -473,12 +487,14 @@ def test_main_llm_timeout(
     """
     main() should handle LLM timeout gracefully.
     """
-    mock_load_config.return_value = {
-        "default_model": "test-model",
-        "provider_credentials": {"test": "key"},
-        "timeout_seconds": 30,
-        "memory_window": 10,
-    }
+    mock_load_config.return_value = Config(
+        default_model="test-model",
+        provider_credentials={"test": "key"},
+        timeout_seconds=30,
+        memory_window=10,
+        preferred_providers={},
+        ollama_models=[],
+    )
     mock_get_active_models.return_value = ["test-model"]
     mock_llm_call.side_effect = LLMTimeoutError("LLM timeout")
 

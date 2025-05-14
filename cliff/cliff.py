@@ -88,8 +88,8 @@ def main() -> None:
 
     # load config
     config = load_config()
-    timeout = config["timeout_seconds"]
-    memory_window = config["memory_window"]
+    timeout = config.timeout_seconds
+    memory_window = config.memory_window
 
     # load memory
     mem = ChatMemory()
@@ -124,7 +124,7 @@ def main() -> None:
                 cliff_print(f.read())
             sys.exit(0)
 
-        if config["default_model"] is None and model_arg is None:
+        if config.default_model is None and model_arg is None:
             with open(AMBIGUOUS_MODEL, "r") as f:
                 cliff_print(f.read())
             sys.exit(0)
@@ -152,7 +152,7 @@ def main() -> None:
         if model_arg is not None:
             model = model_arg
         else:
-            model = str(config["default_model"])
+            model = str(config.default_model)
 
         try:
             with LoadingAnimation():
