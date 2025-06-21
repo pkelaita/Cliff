@@ -1,8 +1,20 @@
 # Changelog
 
-_Current version: 0.5.1_
+_Current version: 0.5.3_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.5.3 - June 21, 2025
+
+#### Changed
+
+- Updated [L2M2](https://github.com/pkelaita/l2m2) from v0.0.53 to v0.0.56, which adds support for the following models:
+  - Claude Opus and Sonnet 4 via Anthropic
+  - o3-pro via OpenAI
+  - Magistral-small and medium, Devstral-small, and Codestral-mamba via Mistral Cloud
+- Updated the following default models:
+  - Google: `gemini-2.0-flash` → `gemini-2.5-flash`
+  - Anthropic: `claude-3.7-sonnet` → `claude-sonnet-4`
 
 ### 0.5.2 - May 14, 2025
 

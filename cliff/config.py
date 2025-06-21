@@ -37,8 +37,8 @@ DEFAULT_MODEL_MAPPING = {
     "replicate": "llama-3-70b",
     "openai": "gpt-4.1",
     "cerebras": "llama-3.3-70b",
-    "google": "gemini-2.0-flash",
-    "anthropic": "claude-3.7-sonnet",
+    "google": "gemini-2.5-flash",
+    "anthropic": "claude-sonnet-4",
 }
 
 
