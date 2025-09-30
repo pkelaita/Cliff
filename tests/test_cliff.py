@@ -464,6 +464,57 @@ def test_main_model_flag_without_model(mock_pbcopy, monkeypatch):
     assert e.value.code == 1
 
 
+@patch("cliff.cliff.load_config")
+@patch("cliff.cliff.apply_config")
+@patch("cliff.cliff.load_memory")
+@patch("cliff.cliff.LoadingAnimation")
+@patch("l2m2.client.LLMClient.call")
+@patch("l2m2.client.LLMClient.get_active_models")
+# Stopgap - See comment in cliff.py
+def test_main_reasoning_models_extra_params(
+    mock_get_active_models,
+    mock_llm_call,
+    mock_loading,
+    mock_load_mem,
+    mock_apply_config,
+    mock_load_config,
+    mock_pbcopy,
+    monkeypatch,
+):
+    mock_load_config.return_value = Config(
+        provider_credentials={"test": "key"},
+        default_model="gpt-5",
+        timeout_seconds=30,
+        memory_window=10,
+        preferred_providers={},
+        ollama_models=[],
+    )
+    mock_get_active_models.return_value = ["gpt-5"]
+    mock_llm_call.return_value = '{"command": "ls -l"}'
+
+    monkeypatch.setattr("sys.argv", ["cliff.py", "list", "files"])
+    main()
+    assert mock_llm_call.call_args[1]["extra_params"] == {
+        "reasoning": {"effort": "minimal"}
+    }
+
+    mock_llm_call.reset_mock()
+    mock_load_config.return_value = Config(
+        provider_credentials={"test": "key"},
+        default_model="claude-sonnet-4.5",
+        timeout_seconds=30,
+        memory_window=10,
+        preferred_providers={},
+        ollama_models=[],
+    )
+    mock_get_active_models.return_value = ["claude-sonnet-4.5"]
+
+    main()
+    assert mock_llm_call.call_args[1]["extra_params"] == {
+        "thinking": {"type": "disabled"}
+    }
+
+
 # -- Tests for Error Handling -- #
 
 
