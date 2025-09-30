@@ -158,7 +158,6 @@ def main() -> None:
             "model": model,
             "prompt": " ".join(args),
             "system_prompt": sysprompt,
-            "json_mode": True,
             "timeout": timeout,
         }
 
@@ -169,6 +168,10 @@ def main() -> None:
 
         if model == "claude-sonnet-4.5":
             call_kwargs["extra_params"] = {"thinking": {"type": "disabled"}}
+
+        # TODO another stopgap until I properly implement structured outputs in l2m2
+        if "claude" not in model:
+            call_kwargs["json_mode"] = True
 
         try:
             with LoadingAnimation():
