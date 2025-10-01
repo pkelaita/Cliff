@@ -1,8 +1,34 @@
 # Changelog
 
-_Current version: 0.5.3_
+_Current version: 0.5.4_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.5.4 - September 30, 2025
+
+#### Added
+
+- Updated [L2M2](https://github.com/pkelaita/l2m2) from v0.0.56 to v0.0.57, which adds support for the following models:
+  - [GPT-5, GPT-5-mini, and GPT-5-nano](https://openai.com/index/introducing-gpt-5/) via OpenAI.
+  - [Claude Opus 4.1](https://www.anthropic.com/news/claude-opus-4-1) and [Claude Sonnet 4.5](https://www.anthropic.com/news/claude-sonnet-4-5) via Anthropic.
+  - [Commmand-A Reasoning](https://cohere.com/blog/command-a-reasoning) and [Commmand-A Translate](https://cohere.com/blog/command-a-translate) via Cohere.
+  - [Devstral Medium](https://mistral.ai/news/devstral-2507) via Mistral.
+  - [GPT-OSS](https://openai.com/index/introducing-gpt-oss/), with the 120b version available via Groq and Cerebras and the 20b version available via Groq.
+  - [Kimi K2](https://github.com/MoonshotAI/Kimi-K2) via Groq.
+  - The following additional models via Cerebras:
+    - [Llama 4 Maverick](https://ai.meta.com/blog/llama-4-multimodal-intelligence/) (also supported via Groq)
+    - [Qwen 3 Coder](https://github.com/QwenLM/Qwen3-Coder) in versions 480b, 235b, and 235b-thinking.
+
+#### Changed
+
+- The L2M2 update also bumps the following Mistral model tags to their latest versions:
+  - Magistral Small: `magistral-small-2506` → `magistral-small-2509`
+  - Mistral Medium: `mistral-medium-2505` → `mistral-medium-2508`
+  - Mistral Small: `mistral-small-2503` → `mistral-small-2506`
+  - Codestral: `codestral-2501` → `codestral-2508`
+- Updated the following default models for providers:
+  - OpenAI: `gpt-4o` → `gpt-5`
+  - Anthropic: `claude-3.7-sonnet` → `claude-sonnet-4.5`
 
 ### 0.5.3 - June 21, 2025
 

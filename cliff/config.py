@@ -35,10 +35,10 @@ DEFAULT_MODEL_MAPPING = {
     "cohere": "command-a",
     "mistral": "codestral",
     "replicate": "llama-3-70b",
-    "openai": "gpt-4.1",
+    "openai": "gpt-5",
     "cerebras": "llama-3.3-70b",
     "google": "gemini-2.5-flash",
-    "anthropic": "claude-sonnet-4",
+    "anthropic": "claude-sonnet-4.5",
 }
 
 

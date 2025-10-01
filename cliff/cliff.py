@@ -154,15 +154,28 @@ def main() -> None:
         else:
             model = str(config.default_model)
 
+        call_kwargs = {
+            "model": model,
+            "prompt": " ".join(args),
+            "system_prompt": sysprompt,
+            "timeout": timeout,
+        }
+
+        # TODO this is just a stopgap until I implement reasoning effort natively in l2m2
+        # Cliff basically has no users, so I can do this :)
+        if model == "gpt-5":
+            call_kwargs["extra_params"] = {"reasoning": {"effort": "minimal"}}
+
+        if model == "claude-sonnet-4.5":
+            call_kwargs["extra_params"] = {"thinking": {"type": "disabled"}}
+
+        # TODO another stopgap until I properly implement structured outputs in l2m2
+        if "claude" not in model:
+            call_kwargs["json_mode"] = True
+
         try:
             with LoadingAnimation():
-                result = llm.call(
-                    model=model,
-                    prompt=" ".join(args),
-                    system_prompt=sysprompt,
-                    json_mode=True,
-                    timeout=timeout,
-                )
+                result = llm.call(**call_kwargs)  # type: ignore
         except LLMTimeoutError:
             cliff_print(
                 'LLM call timed out. Try increasing the timeout with "cliff --config timeout [seconds]"'
