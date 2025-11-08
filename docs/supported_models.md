@@ -48,9 +48,10 @@ Below are Cliff's supported API-based models. Note that model name should be use
 | `gemini-2.5-flash-lite` | [Google](https://ai.google.dev/) | `gemini-2.5-flash-lite` |
 | `gemini-2.0-flash` | [Google](https://ai.google.dev/) | `gemini-2.0-flash` |
 | `gemini-2.0-flash-lite` | [Google](https://ai.google.dev/) | `gemini-2.0-flash-lite` |
+| `claude-sonnet-4.5` | [Anthropic](https://www.anthropic.com/api) | `claude-sonnet-4-5-20250929` |
+| `claude-haiku-4.5` | [Anthropic](https://www.anthropic.com/api) | `claude-haiku-4-5-20251001` |
 | `claude-opus-4.1` | [Anthropic](https://www.anthropic.com/api) | `claude-opus-4-1-20250805` |
 | `claude-opus-4` | [Anthropic](https://www.anthropic.com/api) | `claude-opus-4-20250514` |
-| `claude-sonnet-4.5` | [Anthropic](https://www.anthropic.com/api) | `claude-sonnet-4-20250514` |
 | `claude-sonnet-4` | [Anthropic](https://www.anthropic.com/api) | `claude-sonnet-4-20250514` |
 | `claude-3.7-sonnet` | [Anthropic](https://www.anthropic.com/api) | `claude-3-7-sonnet-20250219` |
 | `claude-3.5-sonnet` | [Anthropic](https://www.anthropic.com/api) | `claude-3-5-sonnet-20241022` |
@@ -86,7 +87,10 @@ Below are Cliff's supported API-based models. Note that model name should be use
 | `llama-3-8b` | [Groq](https://wow.groq.com/), [Replicate](https://replicate.com/) | `llama3-8b-8192`, `meta/meta-llama-3-8b-instruct` |
 | `gpt-oss-120b` | [Groq](https://wow.groq.com/), [Cerebras](https://inference-docs.cerebras.ai) | `openai/gpt-oss-120b`, `gpt-oss-120b` |
 | `gpt-oss-20b` | [Groq](https://wow.groq.com/) | `openai/gpt-oss-20b` |
-| `kimi-k2` | [Groq](https://wow.groq.com/) | `moonshotai/kimi-k2-instruct-0905` |
+| `kimi-k2` | [Moonshot AI](https://www.moonshot.ai/), [Groq](https://wow.groq.com/) | `kimi-k2-0905-preview`, `moonshotai/kimi-k2-instruct-0905` |
+| `kimi-k2-turbo` | [Moonshot AI](https://www.moonshot.ai/) | `kimi-k2-turbo-preview` |
+| `kimi-k2-thinking` | [Moonshot AI](https://www.moonshot.ai/) | `kimi-k2-thinking` |
+| `kimi-k2-thinking-turbo` | [Moonshot AI](https://www.moonshot.ai/) | `kimi-k2-thinking-turbo` |
 | `qwen-3-480b` | [Cerebras](https://inference-docs.cerebras.ai) | `qwen-3-coder-480b` |
 | `qwen-3-235b` | [Cerebras](https://inference-docs.cerebras.ai) | `qwen-3-235b-a22b-instruct-2507` |
 | `qwen-3-235b-thinking` | [Cerebras](https://inference-docs.cerebras.ai) | `qwen-3-235b-a22b-thinking-2507` |

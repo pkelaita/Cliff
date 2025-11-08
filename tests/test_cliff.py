@@ -246,7 +246,7 @@ def test_main_no_default_model(
     captured = capsys.readouterr()
     assert "It looks like you haven't yet set a default model." in captured.out
 
-    assert e.value.code == 0
+    assert e.value.code == 0  # ty: ignore
 
 
 @patch("cliff.cliff.load_config")
@@ -326,7 +326,7 @@ def test_main_no_active_models(
 
     captured = capsys.readouterr()
     assert "Welcome to Cliff! To get started," in captured.out
-    assert e.value.code == 0
+    assert e.value.code == 0  # ty: ignore
 
 
 @patch("cliff.cliff.load_config")
@@ -461,7 +461,7 @@ def test_main_model_flag_without_model(mock_pbcopy, monkeypatch):
 
     with pytest.raises(SystemExit) as e:
         main()
-    assert e.value.code == 1
+    assert e.value.code == 1  # ty: ignore
 
 
 @patch("cliff.cliff.load_config")
@@ -555,4 +555,4 @@ def test_main_llm_timeout(
         main()
     captured = capsys.readouterr()
     assert "LLM call timed out" in captured.out
-    assert e.value.code == 1
+    assert e.value.code == 1  # ty: ignore
