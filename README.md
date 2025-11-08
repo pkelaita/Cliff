@@ -1,6 +1,6 @@
 # Cliff: Generate Unix Commands in the Terminal
 
-![CI](https://github.com/pkelaita/cliff/actions/workflows/ci.yml/badge.svg) [![codecov](https://codecov.io/gh/pkelaita/Cliff/graph/badge.svg?token=oQ9Jp8spXX)](https://codecov.io/gh/pkelaita/Cliff) [![PyPI Version](https://badge.fury.io/py/cliff-cli.svg?timestamp=1762642992)](https://pypi.org/project/cliff-cli/)
+![CI](https://github.com/pkelaita/cliff/actions/workflows/ci.yml/badge.svg) [![codecov](https://codecov.io/gh/pkelaita/Cliff/graph/badge.svg?token=oQ9Jp8spXX)](https://codecov.io/gh/pkelaita/Cliff) [![PyPI Version](https://badge.fury.io/py/cliff-cli.svg?timestamp=1762643306)](https://pypi.org/project/cliff-cli/)
 
 Cliff (**C**ommand **L**ine **I**nter**F**ace **F**riend) is an AI assistant that helps you come up with Unix commands. Given an objective (for example, "kill the process running on port 8080"), Cliff will generate a command that does the objective and add it to your paste buffer for you to easily paste into your terminal.
 
@@ -80,7 +80,7 @@ cliff "kill the process that's running on port 8080"
 If you want to specify which model to use, you can do so with the `--model` or `-m` flag.
 
 ```
-cliff --model gpt-4o-mini kill the process running on port 8080
+cliff --model gpt-5-mini kill the process running on port 8080
 ```
 
 To view the man page, run `cliff` with no arguments.
