@@ -5,27 +5,23 @@ description = "Generate Unix commands in the terminal"
 readme = "README.md"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 urls.Homepage = "https://github.com/pkelaita/cliff"
 urls.Documentation = "https://github.com/pkelaita/cliff/blob/main/README.md"
 urls.Repository = "https://github.com/pkelaita/cliff.git"
 urls.Issues = "https://github.com/pkelaita/cliff/issues"
 dynamic = ["version"]
-dependencies = [
- "l2m2>=0.0.59",
- "pydantic==2.11.9",
- "rich==14.1.0",
-]
+dependencies = ["l2m2==0.0.61", "pydantic==2.11.9", "rich==14.1.0"]
 
 [dependency-groups]
 dev = [
     "mypy>=1.15.0",
     "pytest>=8.3.4",
     "pytest-cov>=6.0.0",
-    "ruff>=0.9.7",
+    "ruff>=0.14.4",
     "tox>=4.24.1",
     "twine>=6.1.0",
-    "ty>=0.0.1a11",
+    "ty>=0.0.1a25",
 ]
 
 [project.scripts]
