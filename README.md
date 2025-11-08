@@ -1,6 +1,6 @@
 # Cliff: Generate Unix Commands in the Terminal
 
-![CI](https://github.com/pkelaita/cliff/actions/workflows/ci.yml/badge.svg) [![codecov](https://codecov.io/gh/pkelaita/Cliff/graph/badge.svg?token=oQ9Jp8spXX)](https://codecov.io/gh/pkelaita/Cliff) [![PyPI Version](https://badge.fury.io/py/cliff-cli.svg?timestamp=1762638451)](https://pypi.org/project/cliff-cli/)
+![CI](https://github.com/pkelaita/cliff/actions/workflows/ci.yml/badge.svg) [![codecov](https://codecov.io/gh/pkelaita/Cliff/graph/badge.svg?token=oQ9Jp8spXX)](https://codecov.io/gh/pkelaita/Cliff) [![PyPI Version](https://badge.fury.io/py/cliff-cli.svg?timestamp=1762642992)](https://pypi.org/project/cliff-cli/)
 
 Cliff (**C**ommand **L**ine **I**nter**F**ace **F**riend) is an AI assistant that helps you come up with Unix commands. Given an objective (for example, "kill the process running on port 8080"), Cliff will generate a command that does the objective and add it to your paste buffer for you to easily paste into your terminal.
 
@@ -18,7 +18,7 @@ It's annoying having to open the browser when I forget how to do something in th
   - A valid API key from [OpenAI](https://platform.openai.com/), [Anthropic](https://www.anthropic.com/api), [Google](https://ai.google.dev/), [Cohere](https://cohere.com/), [Groq](https://console.groq.com/login), [Replicate](https://replicate.com/), [Mistral](https://docs.mistral.ai/deployment/laplateforme/overview/), or [Cerebras](https://cloud.cerebras.ai/).
   - An LLM running locally with [Ollama](https://ollama.com/).
 - A Unix-like operating system
-- Python >= 3.9
+- Python >= 3.10
 
 ## Installation
 

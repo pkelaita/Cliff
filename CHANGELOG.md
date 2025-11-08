@@ -1,8 +1,27 @@
 # Changelog
 
-_Current version: 0.5.4_
+_Current version: 0.5.6_
 
 [PyPi link](https://pypi.org/project/cliff-cli/)
+
+### 0.5.6 - November 8, 2025
+
+> [!CAUTION]
+> This release drops support for Python 3.9! If you are using Python 3.9, please upgrade to Python 3.10 or higher to use l2m2 v0.0.60 or higher.
+
+> [!NOTE]
+> Version 0.5.5 was skipped due to a versioning error on my part. Sorry!
+
+#### Added
+
+- Updated [L2M2](https://github.com/pkelaita/l2m2) from v0.0.57 to v0.0.61, which adds support for another provider, [Moonshot AI](https://moonshot.ai/), as well as the following models:
+  - [Kimi K2](https://github.com/MoonshotAI/Kimi-K2) base, turbo, thinking, and thinking-turbo via Moonshot's API.
+  - [Claude Haiku 4.5](https://www.anthropic.com/news/claude-haiku-4-5) via Anthropic.
+- Support for [Python 3.14](https://www.python.org/downloads/release/python-3140/), which released in October.
+
+#### Removed
+
+- Dropped support for Python 3.9 as it is [no longer officially supported](https://devguide.python.org/versions/).
 
 ### 0.5.4 - September 30, 2025
 
